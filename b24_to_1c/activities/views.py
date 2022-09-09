@@ -65,55 +65,55 @@ def response_for_bp(portal, event_token, log_message, return_values=None):
     bx24.call(method_rest, params)
 
 
-def start_app(request, logger) -> dict[str, any] or HttpResponse:
-    """Start application."""
-    logger.info(MESSAGES_FOR_LOG['start_app'])
-    logger.info('{} {}'.format(MESSAGES_FOR_LOG['start_block'],
-                               'Начальные данные'))
-    if request.method != 'POST':
-        logger.error(MESSAGES_FOR_LOG['request_not_post'])
-        logger.info(MESSAGES_FOR_LOG['stop_app'])
-        return HttpResponse(status=200)
-    return {
-        'member_id': request.POST.get('auth[member_id]'),
-        'event_token': request.POST.get('event_token'),
-        'document_type': request.POST.get('document_type[2]'),
-        'obj_id': request.POST.get('properties[obj_id]') or 0,
-        'company_id': request.POST.get('properties[company_id]') or 0
-    }
+# def start_app(request, logger) -> dict[str, any] or HttpResponse:
+#     """Start application."""
+#     logger.info(MESSAGES_FOR_LOG['start_app'])
+#     logger.info('{} {}'.format(MESSAGES_FOR_LOG['start_block'],
+#                                'Начальные данные'))
+#     if request.method != 'POST':
+#         logger.error(MESSAGES_FOR_LOG['request_not_post'])
+#         logger.info(MESSAGES_FOR_LOG['stop_app'])
+#         return HttpResponse(status=200)
+#     return {
+#         'member_id': request.POST.get('auth[member_id]'),
+#         'event_token': request.POST.get('event_token'),
+#         'document_type': request.POST.get('document_type[2]'),
+#         'obj_id': request.POST.get('properties[obj_id]') or 0,
+#         'company_id': request.POST.get('properties[company_id]') or 0
+#     }
 
 
-def create_portal(initial_data: dict[str, any],
-                  logger) -> tuple[Portals, SettingsPortal] or HttpResponse:
-    """Method for create portal."""
-    try:
-        portal: Portals = Portals.objects.get(
-            member_id=initial_data['member_id'])
-        portal.check_auth()
-        settings_portal = SettingsPortal.objects.get(portal=portal)
-        return portal, settings_portal
-    except ObjectDoesNotExist:
-        logger.error(MESSAGES_FOR_LOG['portal_not_found'].format(
-            initial_data['member_id']))
-        logger.info(MESSAGES_FOR_LOG['stop_app'])
-        return HttpResponse(status=200)
+# def create_portal(initial_data: dict[str, any],
+#                   logger) -> tuple[Portals, SettingsPortal] or HttpResponse:
+#     """Method for create portal."""
+#     try:
+#         portal: Portals = Portals.objects.get(
+#             member_id=initial_data['member_id'])
+#         portal.check_auth()
+#         settings_portal = SettingsPortal.objects.get(portal=portal)
+#         return portal, settings_portal
+#     except ObjectDoesNotExist:
+#         logger.error(MESSAGES_FOR_LOG['portal_not_found'].format(
+#             initial_data['member_id']))
+#         logger.info(MESSAGES_FOR_LOG['stop_app'])
+#         return HttpResponse(status=200)
 
 
-def check_initial_data(portal: Portals, initial_data: dict[str, any],
-                       logger) -> tuple[int, int] or HttpResponse:
-    """Method for check initial data."""
-    try:
-        obj_id = int(initial_data['obj_id'])
-        company_id = int(initial_data['company_id'])
-        return obj_id, company_id
-    except Exception as ex:
-        logger.error(MESSAGES_FOR_LOG['error_start_data'].format(
-            initial_data['obj_id'], initial_data['company_id']
-        ))
-        logger.info(MESSAGES_FOR_LOG['stop_app'])
-        response_for_bp(
-            portal,
-            initial_data['event_token'],
-            '{} {}'.format(MESSAGES_FOR_BP['main_error'], ex.args[0]),
-        )
-        return HttpResponse(status=200)
+# def check_initial_data(portal: Portals, initial_data: dict[str, any],
+#                        logger) -> tuple[int, int] or HttpResponse:
+#     """Method for check initial data."""
+#     try:
+#         obj_id = int(initial_data['obj_id'])
+#         company_id = int(initial_data['company_id'])
+#         return obj_id, company_id
+#     except Exception as ex:
+#         logger.error(MESSAGES_FOR_LOG['error_start_data'].format(
+#             initial_data['obj_id'], initial_data['company_id']
+#         ))
+#         logger.info(MESSAGES_FOR_LOG['stop_app'])
+#         response_for_bp(
+#             portal,
+#             initial_data['event_token'],
+#             '{} {}'.format(MESSAGES_FOR_BP['main_error'], ex.args[0]),
+#         )
+#         return HttpResponse(status=200)
