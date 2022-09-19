@@ -65,8 +65,7 @@ def b24_to_1c(request):
     _response_for_bp(
         portal,
         initial_data['event_token'],
-        f'Успех. Полю в сделке {initial_data["field_code"]} присвоено '
-        f'новое значение {initial_data["field_value"]}.',
+        f'Успех',
         return_values={'result': f'Ok: {initial_data}'},
     )
     return HttpResponse(status=HTTPStatus.OK)
