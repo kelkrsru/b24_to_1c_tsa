@@ -1,4 +1,6 @@
-from core.bitrix24.bitrix24 import ActivityB24
+from http import HTTPStatus
+
+from core.bitrix24.bitrix24 import ActivityB24, DealB24
 from core.models import Portals
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
@@ -52,7 +54,65 @@ def uninstall(request):
     return JsonResponse({'result': result})
 
 
-def response_for_bp(portal, event_token, log_message, return_values=None):
+@csrf_exempt
+def b24_to_1c(request):
+    """Method send request from b24 to 1C."""
+    initial_data = _get_initial_data_copy_products(request)
+    portal, settings_portal = _create_portal(initial_data)
+    _check_initial_data_copy_products(portal, initial_data)
+
+    deal = DealB24(portal, initial_data['deal_id'])
+    _response_for_bp(
+        portal,
+        initial_data['event_token'],
+        f'Успех. Полю в сделке {initial_data["field_code"]} присвоено '
+        f'новое значение {initial_data["field_value"]}.',
+        return_values={'result': f'Ok: {initial_data}'},
+    )
+    return HttpResponse(status=HTTPStatus.OK)
+
+
+def _create_portal(initial_data):
+    """Method for create portal."""
+    try:
+        portal = Portals.objects.get(member_id=initial_data['member_id'])
+        portal.check_auth()
+        settings_portal = SettingsPortal.objects.get(portal=portal)
+        return portal, settings_portal
+    except ObjectDoesNotExist:
+        return HttpResponse(status=HTTPStatus.BAD_REQUEST)
+
+
+def _get_initial_data_copy_products(request):
+    """Method for get initial data from Post request."""
+    if request.method != 'POST':
+        return HttpResponse(status=HTTPStatus.BAD_REQUEST)
+    return {
+        'member_id': request.POST.get('auth[member_id]'),
+        'event_token': request.POST.get('event_token'),
+        'document_date': request.POST.get('properties[document_date]'),
+        'deal_id': request.POST.get('properties[deal_id]') or 0,
+        'is_organization': request.POST.get('properties[is_organization]'),
+        'client_inn': request.POST.get('properties[client_inn]'),
+        'client_name': request.POST.get('properties[client_name]'),
+    }
+
+
+def _check_initial_data_copy_products(portal, initial_data):
+    """Method for check initial data."""
+    try:
+        initial_data['deal_id'] = int(initial_data['deal_id'])
+    except Exception as ex:
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Ошибка. Проверьте входные данные.',
+            return_values={'result': f'Error: {ex.args[0]}'},
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+
+
+def _response_for_bp(portal, event_token, log_message, return_values=None):
     """Method for send parameters in bp."""
     bx24 = Bitrix24(portal.name)
     bx24._access_token = portal.auth_id
@@ -63,57 +123,3 @@ def response_for_bp(portal, event_token, log_message, return_values=None):
         'return_values': return_values,
     }
     bx24.call(method_rest, params)
-
-
-# def start_app(request, logger) -> dict[str, any] or HttpResponse:
-#     """Start application."""
-#     logger.info(MESSAGES_FOR_LOG['start_app'])
-#     logger.info('{} {}'.format(MESSAGES_FOR_LOG['start_block'],
-#                                'Начальные данные'))
-#     if request.method != 'POST':
-#         logger.error(MESSAGES_FOR_LOG['request_not_post'])
-#         logger.info(MESSAGES_FOR_LOG['stop_app'])
-#         return HttpResponse(status=200)
-#     return {
-#         'member_id': request.POST.get('auth[member_id]'),
-#         'event_token': request.POST.get('event_token'),
-#         'document_type': request.POST.get('document_type[2]'),
-#         'obj_id': request.POST.get('properties[obj_id]') or 0,
-#         'company_id': request.POST.get('properties[company_id]') or 0
-#     }
-
-
-# def create_portal(initial_data: dict[str, any],
-#                   logger) -> tuple[Portals, SettingsPortal] or HttpResponse:
-#     """Method for create portal."""
-#     try:
-#         portal: Portals = Portals.objects.get(
-#             member_id=initial_data['member_id'])
-#         portal.check_auth()
-#         settings_portal = SettingsPortal.objects.get(portal=portal)
-#         return portal, settings_portal
-#     except ObjectDoesNotExist:
-#         logger.error(MESSAGES_FOR_LOG['portal_not_found'].format(
-#             initial_data['member_id']))
-#         logger.info(MESSAGES_FOR_LOG['stop_app'])
-#         return HttpResponse(status=200)
-
-
-# def check_initial_data(portal: Portals, initial_data: dict[str, any],
-#                        logger) -> tuple[int, int] or HttpResponse:
-#     """Method for check initial data."""
-#     try:
-#         obj_id = int(initial_data['obj_id'])
-#         company_id = int(initial_data['company_id'])
-#         return obj_id, company_id
-#     except Exception as ex:
-#         logger.error(MESSAGES_FOR_LOG['error_start_data'].format(
-#             initial_data['obj_id'], initial_data['company_id']
-#         ))
-#         logger.info(MESSAGES_FOR_LOG['stop_app'])
-#         response_for_bp(
-#             portal,
-#             initial_data['event_token'],
-#             '{} {}'.format(MESSAGES_FOR_BP['main_error'], ex.args[0]),
-#         )
-#         return HttpResponse(status=200)
