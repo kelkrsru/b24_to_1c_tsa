@@ -1,4 +1,8 @@
+import json
+import logging
+import os
 from http import HTTPStatus
+from logging.handlers import RotatingFileHandler
 
 from core.bitrix24.bitrix24 import ActivityB24, DealB24
 from core.models import Portals
@@ -8,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from pybitrix24 import Bitrix24
 from settings.models import SettingsPortal
+from django.conf import settings
 
 from .messages import MESSAGES_FOR_BP, MESSAGES_FOR_LOG
 from .models import Activity
@@ -57,11 +62,30 @@ def uninstall(request):
 @csrf_exempt
 def b24_to_1c(request):
     """Method send request from b24 to 1C."""
-    initial_data = _get_initial_data_copy_products(request)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    if not logger.hasHandlers():
+        handler = RotatingFileHandler(
+            os.path.join(os.path.dirname(settings.BASE_DIR), 'logs/app.log'),
+            maxBytes=5000000,
+            backupCount=5
+        )
+        formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+    initial_data = _get_initial_data(request)
     portal, settings_portal = _create_portal(initial_data)
-    _check_initial_data_copy_products(portal, initial_data)
+    _check_initial_data(portal, initial_data)
 
     deal = DealB24(portal, initial_data['deal_id'])
+    deal.get_all_products()
+
+    logger.info('Полученные товары: {}'.format(
+        json.dumps(deal.products, indent=2)
+    ))
+
     _response_for_bp(
         portal,
         initial_data['event_token'],
@@ -82,7 +106,7 @@ def _create_portal(initial_data):
         return HttpResponse(status=HTTPStatus.BAD_REQUEST)
 
 
-def _get_initial_data_copy_products(request):
+def _get_initial_data(request):
     """Method for get initial data from Post request."""
     if request.method != 'POST':
         return HttpResponse(status=HTTPStatus.BAD_REQUEST)
@@ -97,7 +121,7 @@ def _get_initial_data_copy_products(request):
     }
 
 
-def _check_initial_data_copy_products(portal, initial_data):
+def _check_initial_data(portal, initial_data):
     """Method for check initial data."""
     try:
         initial_data['deal_id'] = int(initial_data['deal_id'])
