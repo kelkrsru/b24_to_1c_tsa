@@ -63,7 +63,7 @@ def uninstall(request):
 def b24_to_1c(request):
     """Method send request from b24 to 1C."""
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     if not logger.hasHandlers():
         handler = RotatingFileHandler(
             os.path.join(os.path.dirname(settings.BASE_DIR), 'logs/app.log'),
@@ -75,16 +75,22 @@ def b24_to_1c(request):
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
+    logger.info('*****-----Start application-----*****')
+
     initial_data = _get_initial_data(request)
+    logger.debug('Initial data: \n{}'.format(
+        json.dumps(initial_data, indent=2, ensure_ascii=False)
+    ))
     portal, settings_portal = _create_portal(initial_data)
     _check_initial_data(portal, initial_data)
 
     deal = DealB24(portal, initial_data['deal_id'])
     deal.get_all_products()
-
-    logger.info('Полученные товары: {}'.format(
-        json.dumps(deal.products, indent=2)
+    logger.debug('Get products: \n{}'.format(
+        json.dumps(deal.products, indent=2, ensure_ascii=False)
     ))
+
+
 
     _response_for_bp(
         portal,
@@ -133,6 +139,11 @@ def _check_initial_data(portal, initial_data):
             return_values={'result': f'Error: {ex.args[0]}'},
         )
         return HttpResponse(status=HTTPStatus.OK)
+
+
+def _send_soap():
+    """Method for send request to 1C with soap client."""
+
 
 
 def _response_for_bp(portal, event_token, log_message, return_values=None):

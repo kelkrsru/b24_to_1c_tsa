@@ -4,9 +4,19 @@ from django.db import models
 
 class SettingsPortal(models.Model):
     """Модель настроек для портала."""
-    id_smart_process_cargo = models.PositiveSmallIntegerField(
-        verbose_name='ID smart процесса "Груз"',
-        default=0,
+    user_soap = models.CharField(
+        verbose_name='Имя пользователя',
+        help_text='Имя пользователя для аутентификации на сервере soap',
+        max_length=50,
+    )
+    passwd_soap = models.CharField(
+        verbose_name='Пароль пользователя',
+        help_text='Пароль пользователя для аутентификации на сервере soap',
+        max_length=255,
+    )
+    address_soap = models.URLField(
+        verbose_name='Адрес сервера',
+        help_text='Адрес сервера soap',
     )
     portal = models.OneToOneField(
         Portals,
