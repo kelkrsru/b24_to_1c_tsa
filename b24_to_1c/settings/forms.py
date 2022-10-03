@@ -9,3 +9,6 @@ class SettingsPortalForm(forms.ModelForm):
         model = SettingsPortal
         fields = '__all__'
         exclude = ('portal',)
+        widgets = {
+            'passwd_soap': forms.PasswordInput,
+        }
