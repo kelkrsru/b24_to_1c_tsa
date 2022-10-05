@@ -191,7 +191,7 @@ def b24_to_1c(request):
                 'Count': product.get('QUANTITY'),
                 'Price': product.get('PRICE'),
                 'Unit': product.get('MEASURE_NAME'),
-                'TaxRate': product.get('TAX_RATE') + '%',
+                'TaxRate': f'{product.get("TAX_RATE")}%',
             })
         logger.info('Services: \n{}'.format(
             services, indent=2, ensure_ascii=False))
