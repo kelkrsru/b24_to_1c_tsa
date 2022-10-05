@@ -118,7 +118,7 @@ def b24_to_1c(request):
 
         if airline_id:
             airline_list = ListB24(portal, settings_portal.airline_list_id)
-            airline = airline_list.get_element_by_id(airline_id)
+            airline = airline_list.get_element_by_id(airline_id)[0]
             airline_name = airline.get(
                 settings_portal.airline_name_code).values()[0]
             airline_code = airline.get(
