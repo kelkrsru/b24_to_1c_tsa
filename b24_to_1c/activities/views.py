@@ -129,7 +129,7 @@ def b24_to_1c(request):
 
         city_list = ListB24(portal, settings_portal.city_list_id)
         if city_in_id:
-            city_in = city_list.get_element_by_id(city_in_id)
+            city_in = city_list.get_element_by_id(city_in_id)[0]
             city_in_name = city_in.get(settings_portal.city_name_code)
             city_in_code = list(city_in.get(
                 settings_portal.city_code_code).values())[0]
@@ -140,7 +140,7 @@ def b24_to_1c(request):
             city_in_code = None
             city_in_country = None
         if city_out_id:
-            city_out = city_list.get_element_by_id(city_out_id)
+            city_out = city_list.get_element_by_id(city_out_id)[0]
             city_out_name = city_out.get(settings_portal.city_name_code)
             city_out_code = list(city_out.get(
                 settings_portal.city_code_code).values())[0]
