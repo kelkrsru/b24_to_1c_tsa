@@ -8,7 +8,8 @@ from requests import Session
 from requests.auth import HTTPBasicAuth
 from zeep import Transport, Client
 
-from core.bitrix24.bitrix24 import ActivityB24, DealB24, SmartProcessB24
+from core.bitrix24.bitrix24 import ActivityB24, DealB24, SmartProcessB24, \
+    ListB24
 from core.models import Portals
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
@@ -108,29 +109,37 @@ def b24_to_1c(request):
             settings_portal.weight_pay_code) or None
         count_position = cargo_smart_element.get(
             settings_portal.count_position_code) or None
-        airline = cargo_smart_element.get(
+        airline_id = cargo_smart_element.get(
             settings_portal.airline_code) or None
         route_in = cargo_smart_element.get(
             settings_portal.route_in_code) or None
         route_out = cargo_smart_element.get(
             settings_portal.route_out_code) or None
 
-        test_list = [number_awb, weight_fact, weight_pay, count_position, airline, route_in, route_out]
+        if airline_id:
+            airline_list = ListB24(portal, settings_portal.airline_list_id)
+            airline = airline_list.get_element_by_id(airline_id)
+            airline_name = airline.get(
+                settings_portal.airline_name_code).values()[0]
+            airline_code = airline.get(
+                settings_portal.airline_code_code).values()[0]
+        else:
+            airline_name = None
+            airline_code = None
     except RuntimeError as ex:
         _response_for_bp(
             portal,
             initial_data['event_token'],
             f'Ошибка: {ex.args[0]}',
-            return_values={'result': f'Error: {ex.args[1]}, {settings_portal.cargo_smart_id = }, {cargo_smart.id = }'},
+            return_values={'result': f'Error: {ex.args[1]}'},
         )
-
-
+        return HttpResponse(status=HTTPStatus.OK)
 
     _response_for_bp(
         portal,
         initial_data['event_token'],
         f'Успех',
-        return_values={'result': f'Ok: {test_list}'},
+        return_values={'result': f'Ok: {airline_name, airline_code}'},
     )
     return HttpResponse(status=HTTPStatus.OK)
 

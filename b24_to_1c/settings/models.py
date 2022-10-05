@@ -65,6 +65,48 @@ class SettingsPortal(models.Model):
         max_length=30,
         default='ufCrm3_1662977599',
     )
+    airline_list_id = models.PositiveSmallIntegerField(
+        verbose_name='ID универсального списка Авиакомпании',
+        help_text='ID универсального списка, в котором находится перечень '
+                  'авиакомпаний',
+        default=39,
+    )
+    airline_name_code = models.CharField(
+        verbose_name='Код поля Наименование авиакомпании',
+        help_text='Код поля Наименование авиакомпании в универсальном списке',
+        max_length=30,
+        default='PROPERTY_155',
+    )
+    airline_code_code = models.CharField(
+        verbose_name='Код поля Код авиакомпании',
+        help_text='Код поля Код авиакомпании в универсальном списке',
+        max_length=30,
+        default='PROPERTY_157',
+    )
+    city_list_id = models.PositiveSmallIntegerField(
+        verbose_name='ID универсального списка Города',
+        help_text='ID универсального списка, в котором находится перечень '
+                  'городов',
+        default=49,
+    )
+    city_name_code = models.CharField(
+        verbose_name='Код поля Наименование города',
+        help_text='Код поля Наименование города в универсальном списке',
+        max_length=30,
+        default='NAME',
+    )
+    city_code_code = models.CharField(
+        verbose_name='Код поля Код города',
+        help_text='Код поля Код города в универсальном списке',
+        max_length=30,
+        default='PROPERTY_181',
+    )
+    city_country_code = models.CharField(
+        verbose_name='Код поля Страна города',
+        help_text='Код поля Страна города в универсальном списке',
+        max_length=30,
+        default='PROPERTY_183',
+    )
     portal = models.OneToOneField(
         Portals,
         verbose_name='Портал',
