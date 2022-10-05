@@ -164,7 +164,7 @@ def b24_to_1c(request):
             portal,
             initial_data['event_token'],
             f'Ошибка: {ex.args[0]}',
-            return_values={'result': f'Error: {ex.args[1]}'},
+            return_values={'result': f'Error: {ex.args[0]}'},
         )
         return HttpResponse(status=HTTPStatus.OK)
 
