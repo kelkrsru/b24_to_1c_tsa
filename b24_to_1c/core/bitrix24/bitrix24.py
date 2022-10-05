@@ -169,6 +169,19 @@ class SmartProcessB24(ObjB24):
             }
         )).get('productRows')
 
+    def get_elements_for_entity(self, parent_id):
+        """Метод получения элементов смарт процесса привязанных к сделке."""
+        return self._check_error(self.bx24.call(
+            'crm.item.list',
+            {
+                'entityTypeId': int(self.properties.get('type').get(
+                    'entityTypeId')),
+                'filter': {
+                    'parentId2': parent_id
+                }
+            }
+        )).get('items')
+
 
 class ListB24(ObjB24):
     """Класс Универсальных списков."""

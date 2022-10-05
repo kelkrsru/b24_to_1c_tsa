@@ -4,7 +4,11 @@ import os
 from http import HTTPStatus
 from logging.handlers import RotatingFileHandler
 
-from core.bitrix24.bitrix24 import ActivityB24, DealB24
+from requests import Session
+from requests.auth import HTTPBasicAuth
+from zeep import Transport, Client
+
+from core.bitrix24.bitrix24 import ActivityB24, DealB24, SmartProcessB24
 from core.models import Portals
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
@@ -90,13 +94,43 @@ def b24_to_1c(request):
         json.dumps(deal.products, indent=2, ensure_ascii=False)
     ))
 
+    try:
+        cargo_smart = SmartProcessB24(portal, settings_portal.cargo_smart_id)
+        cargo_smart_elements = cargo_smart.get_elements_for_entity(deal.id)
+        if not cargo_smart_elements:
+            logger.info('Deal has not cargo smart elements')
+        cargo_smart_element = cargo_smart_elements[0]
+        number_awb = cargo_smart_element.get(
+            settings_portal.number_awb_code) or None
+        weight_fact = cargo_smart_element.get(
+            settings_portal.weight_fact_code) or None
+        weight_pay = cargo_smart_element.get(
+            settings_portal.weight_pay_code) or None
+        count_position = cargo_smart_element.get(
+            settings_portal.count_position_code) or None
+        airline = cargo_smart_element.get(
+            settings_portal.airline_code) or None
+        route_in = cargo_smart_element.get(
+            settings_portal.route_in_code) or None
+        route_out = cargo_smart_element.get(
+            settings_portal.route_out_code) or None
+
+        test_list = [number_awb, weight_fact, weight_pay, count_position, airline, route_in, route_out]
+    except RuntimeError as ex:
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            f'Ошибка: {ex.args[0]}',
+            return_values={'result': f'Error: {ex.args[1]}'},
+        )
+
 
 
     _response_for_bp(
         portal,
         initial_data['event_token'],
         f'Успех',
-        return_values={'result': f'Ok: {initial_data}'},
+        return_values={'result': f'Ok: {test_list}'},
     )
     return HttpResponse(status=HTTPStatus.OK)
 
@@ -141,9 +175,32 @@ def _check_initial_data(portal, initial_data):
         return HttpResponse(status=HTTPStatus.OK)
 
 
-def _send_soap():
+def _send_soap(settings_portal):
     """Method for send request to 1C with soap client."""
+    user = settings_portal.user_soap
+    passwd = settings_portal.passwd_soap
+    server = settings_portal.address_soap
 
+    session = Session()
+    session.auth = HTTPBasicAuth(user, passwd)
+    soap = Client(server, transport=Transport(session=session))
+
+    factory = soap.type_factory('ns0')
+    client = factory.Client(INN="5902202276", Name="Тестовая организация")
+
+    print(soap.service.POST(
+        Document={
+            "DocDate": "2022-09-20",
+            # "DocNumber": "",
+            # "WeightFact": "0",
+            "Client": client,
+            "Services": [{"Name": "Тест"}, {"Name": "Тест2"}],
+
+        }
+    ))
+    # result = soap.service.AddCRM(Params=json_data)
+    # Закрываем сессию, возвращаем результат
+    session.close()
 
 
 def _response_for_bp(portal, event_token, log_message, return_values=None):
