@@ -181,7 +181,7 @@ def b24_to_1c(request):
                     f'{city_out_country = }')
 
         document_date = datetime.datetime.strptime(
-            initial_data.get('document_date'), '%d-%m-%Y')
+            initial_data.get('document_date'), '%d.%m.%Y').strftime('%d-%m-%Y')
         logger.info(f'Document date: {document_date = }')
 
     except RuntimeError as ex:
