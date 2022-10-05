@@ -181,8 +181,20 @@ def b24_to_1c(request):
                     f'{city_out_country = }')
 
         document_date = datetime.datetime.strptime(
-            initial_data.get('document_date'), '%d.%m.%Y').strftime('%d-%m-%Y')
+            initial_data.get('document_date'), '%d.%m.%Y').strftime('%Y-%m-%d')
         logger.info(f'Document date: {document_date = }')
+
+        services = []
+        for product in deal.products:
+            services.append({
+                'Name': product.get('PRODUCT_NAME'),
+                'Count': product.get('QUANTITY'),
+                'Price': product.get('PRICE'),
+                'Unit': product.get('MEASURE_NAME'),
+                'TaxRate': product.get('TAX_RATE') + '%',
+            })
+        logger.info('Services: \n{}'.format(
+            services, indent=2, ensure_ascii=False))
 
     except RuntimeError as ex:
         _response_for_bp(
@@ -205,7 +217,7 @@ def b24_to_1c(request):
         portal,
         initial_data['event_token'],
         f'Успех',
-        return_values={'result': f'Ok: {airline_name, airline_code, city_in_name, city_in_code, city_in_country, city_out_name, city_out_code, city_out_country}'},
+        return_values={'result': f'Ok: ok'},
     )
     return HttpResponse(status=HTTPStatus.OK)
 
