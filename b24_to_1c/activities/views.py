@@ -9,7 +9,7 @@ from requests.auth import HTTPBasicAuth
 from zeep import Transport, Client
 
 from core.bitrix24.bitrix24 import ActivityB24, DealB24, SmartProcessB24, \
-    ListB24
+    ListB24, CompanyB24
 from core.models import Portals
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
@@ -89,18 +89,41 @@ def b24_to_1c(request):
     portal, settings_portal = _create_portal(initial_data)
     _check_initial_data(portal, initial_data)
 
-    deal = DealB24(portal, initial_data['deal_id'])
-    deal.get_all_products()
-    logger.debug('Get products: \n{}'.format(
-        json.dumps(deal.products, indent=2, ensure_ascii=False)
-    ))
-
     try:
+        deal = DealB24(portal, initial_data['deal_id'])
+        deal.get_all_products()
+        logger.debug('Get products: \n{}'.format(
+            json.dumps(deal.products, indent=2, ensure_ascii=False)
+        ))
+
+        company_id = deal.properties.get('COMPANY_ID') or None
+        if not company_id:
+            _response_for_bp(
+                portal,
+                initial_data['event_token'],
+                f'Ошибка: К сделке не привязана компания',
+                return_values={'result': f'Error: company in deal not found'},
+            )
+            return HttpResponse(status=HTTPStatus.OK)
+        company = CompanyB24(portal, company_id)
+        company_inn = company.get_inn() or None
+        company_name = company.properties.get('Title')
+        if not company_inn:
+            _response_for_bp(
+                portal,
+                initial_data['event_token'],
+                f'Ошибка: У компании в сделке не найден ИНН',
+                return_values={'result': f'Error: company has not inn'},
+            )
+            return HttpResponse(status=HTTPStatus.OK)
+
         cargo_smart = SmartProcessB24(portal, settings_portal.cargo_smart_id)
         cargo_smart_elements = cargo_smart.get_elements_for_entity(deal.id)
         if not cargo_smart_elements:
             logger.info('Deal has not cargo smart elements')
         cargo_smart_element = cargo_smart_elements[0]
+        logger.debug('Checked cargo: \n{}'.format(json.dumps(
+            cargo_smart_element, indent=2, ensure_ascii=False)))
         number_awb = cargo_smart_element.get(
             settings_portal.number_awb_code) or None
         weight_fact = cargo_smart_element.get(
@@ -115,10 +138,15 @@ def b24_to_1c(request):
             settings_portal.route_in_code) or None
         city_out_id = cargo_smart_element.get(
             settings_portal.route_out_code) or None
+        logger.info(f'Cargo info: {number_awb = }, {weight_fact = }, '
+                    f'{weight_pay = }, {count_position = }, {airline_id = }, '
+                    f'{city_in_id = }, {city_out_id = }')
 
         if airline_id:
             airline_list = ListB24(portal, settings_portal.airline_list_id)
             airline = airline_list.get_element_by_id(airline_id)[0]
+            logger.debug('Airline element: \n{}'.format(
+                airline, indent=2, ensure_ascii=False))
             airline_name = list(airline.get(
                 settings_portal.airline_name_code).values())[0]
             airline_code = list(airline.get(
@@ -126,10 +154,13 @@ def b24_to_1c(request):
         else:
             airline_name = None
             airline_code = None
+        logger.info(f'Airline info: {airline_name = }, {airline_code = }')
 
         city_list = ListB24(portal, settings_portal.city_list_id)
         if city_in_id:
             city_in = city_list.get_element_by_id(city_in_id)[0]
+            logger.debug('City_in element: \n{}'.format(
+                city_in, indent=2, ensure_ascii=False))
             city_in_name = city_in.get(settings_portal.city_name_code)
             city_in_code = list(city_in.get(
                 settings_portal.city_code_code).values())[0]
@@ -139,17 +170,23 @@ def b24_to_1c(request):
             city_in_name = None
             city_in_code = None
             city_in_country = None
+        logger.info(f'City_in info: {city_in_name = }, {city_in_code = }, '
+                    f'{city_in_country = }')
         if city_out_id:
             city_out = city_list.get_element_by_id(city_out_id)[0]
+            logger.debug('City_out element: \n{}'.format(
+                city_out, indent=2, ensure_ascii=False))
             city_out_name = city_out.get(settings_portal.city_name_code)
             city_out_code = list(city_out.get(
                 settings_portal.city_code_code).values())[0]
             city_out_country = list(city_out.get(
                 settings_portal.city_country_code).values())[0]
         else:
-            city_in_name = None
-            city_in_code = None
-            city_in_country = None
+            city_out_name = None
+            city_out_code = None
+            city_out_country = None
+        logger.info(f'City_out info: {city_out_name = }, {city_out_code = }, '
+                    f'{city_out_country = }')
 
     except RuntimeError as ex:
         _response_for_bp(
