@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import os
@@ -96,20 +97,8 @@ def b24_to_1c(request):
             json.dumps(deal.products, indent=2, ensure_ascii=False)
         ))
 
-        company_id = deal.properties.get('COMPANY_ID') or None
-        if not company_id:
-            _response_for_bp(
-                portal,
-                initial_data['event_token'],
-                f'Ошибка: К сделке не привязана компания',
-                return_values={'result': f'Error: company in deal not found'},
-            )
-            return HttpResponse(status=HTTPStatus.OK)
-        company = CompanyB24(portal, company_id)
-        logger.debug('Company: {}'.format(json.dumps(
-            company.properties, indent=2, ensure_ascii=False)))
-        company_inn = company.get_inn() or None
-        company_name = company.properties.get('Title')
+        company_inn = initial_data.get('client_inn')
+        company_name = initial_data.get('client_name')
         if not company_inn:
             _response_for_bp(
                 portal,
@@ -190,6 +179,10 @@ def b24_to_1c(request):
             city_out_country = None
         logger.info(f'City_out info: {city_out_name = }, {city_out_code = }, '
                     f'{city_out_country = }')
+
+        document_date = datetime.datetime.strptime(
+            initial_data.get('document_date'), '%d-%m-%Y')
+        logger.info(f'Document date: {document_date = }')
 
     except RuntimeError as ex:
         _response_for_bp(
