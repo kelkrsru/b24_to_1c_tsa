@@ -106,6 +106,8 @@ def b24_to_1c(request):
             )
             return HttpResponse(status=HTTPStatus.OK)
         company = CompanyB24(portal, company_id)
+        logger.debug('Company: {}'.format(json.dumps(
+            company.properties, indent=2, ensure_ascii=False)))
         company_inn = company.get_inn() or None
         company_name = company.properties.get('Title')
         if not company_inn:
@@ -116,6 +118,7 @@ def b24_to_1c(request):
                 return_values={'result': f'Error: company has not inn'},
             )
             return HttpResponse(status=HTTPStatus.OK)
+        logger.info(f'Company properties: {company_name = }, {company_inn = }')
 
         cargo_smart = SmartProcessB24(portal, settings_portal.cargo_smart_id)
         cargo_smart_elements = cargo_smart.get_elements_for_entity(deal.id)
