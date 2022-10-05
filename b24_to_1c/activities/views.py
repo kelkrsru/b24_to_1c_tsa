@@ -111,9 +111,9 @@ def b24_to_1c(request):
             settings_portal.count_position_code) or None
         airline_id = cargo_smart_element.get(
             settings_portal.airline_code) or None
-        route_in = cargo_smart_element.get(
+        city_in_id = cargo_smart_element.get(
             settings_portal.route_in_code) or None
-        route_out = cargo_smart_element.get(
+        city_out_id = cargo_smart_element.get(
             settings_portal.route_out_code) or None
 
         if airline_id:
@@ -126,6 +126,31 @@ def b24_to_1c(request):
         else:
             airline_name = None
             airline_code = None
+
+        city_list = ListB24(portal, settings_portal.city_list_id)
+        if city_in_id:
+            city_in = city_list.get_element_by_id(city_in_id)
+            city_in_name = city_in.get(settings_portal.city_name_code)
+            city_in_code = list(city_in.get(
+                settings_portal.city_code_code).values())[0]
+            city_in_country = list(city_in.get(
+                settings_portal.city_country_code).values())[0]
+        else:
+            city_in_name = None
+            city_in_code = None
+            city_in_country = None
+        if city_out_id:
+            city_out = city_list.get_element_by_id(city_out_id)
+            city_out_name = city_out.get(settings_portal.city_name_code)
+            city_out_code = list(city_out.get(
+                settings_portal.city_code_code).values())[0]
+            city_out_country = list(city_out.get(
+                settings_portal.city_country_code).values())[0]
+        else:
+            city_in_name = None
+            city_in_code = None
+            city_in_country = None
+
     except RuntimeError as ex:
         _response_for_bp(
             portal,
@@ -147,7 +172,7 @@ def b24_to_1c(request):
         portal,
         initial_data['event_token'],
         f'Успех',
-        return_values={'result': f'Ok: {airline_name, airline_code}'},
+        return_values={'result': f'Ok: {airline_name, airline_code, city_in_name, city_in_code, city_in_country, city_out_name, city_out_code, city_out_country}'},
     )
     return HttpResponse(status=HTTPStatus.OK)
 
