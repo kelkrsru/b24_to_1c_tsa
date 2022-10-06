@@ -119,6 +119,30 @@ class SettingsPortal(models.Model):
         max_length=30,
         default='UF_CRM_1665034515'
     )
+    bill_number_in_1c_code = models.CharField(
+        verbose_name='Код поля Номер счета на оплату в 1С',
+        help_text='Код поля Номер счета на оплату в 1С в сделке',
+        max_length=30,
+        default='UF_CRM_1665054060'
+    )
+    sale_number_in_1c_code = models.CharField(
+        verbose_name='Код поля Номер расходной накладной в 1С',
+        help_text='Код поля Номер расходной накладной в 1С в сделке',
+        max_length=30,
+        default='UF_CRM_1665054102'
+    )
+    invoice_number_in_1c_code = models.CharField(
+        verbose_name='Код поля Номер счет фактуры в 1С',
+        help_text='Код поля Номер счет фактуры в 1С в сделке',
+        max_length=30,
+        default='UF_CRM_1665054125'
+    )
+    link_print_in_1c_code = models.CharField(
+        verbose_name='Код поля Ссылка на печатную форму в 1С',
+        help_text='Код поля Ссылка на печатную форму в 1С в сделке',
+        max_length=30,
+        default='UF_CRM_1665054289'
+    )
     portal = models.OneToOneField(
         Portals,
         verbose_name='Портал',

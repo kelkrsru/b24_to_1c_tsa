@@ -311,7 +311,7 @@ def _send_soap(settings_portal, document):
     result = soap.service.POST(Document=document)
     session.close()
 
-    return result
+    return json.loads(result)
 
 
 def _response_for_bp(portal, event_token, log_message, return_values=None):
