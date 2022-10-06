@@ -113,19 +113,28 @@ def b24_to_1c(request):
         document, airline_id, city_in_id, city_out_id = _create_document(
             portal, settings_portal, deal)
         document['DocDate'] = document_date
-        logger.info('Document: \n{}'.format(document, indent=2,
-                                            ensure_ascii=False))
         # Airline
         airline = _create_airline(portal, settings_portal, airline_id)
         logger.info('Airline: \n{}'.format(airline, indent=2,
                                            ensure_ascii=False))
+        document['Airline'] = airline
         # Route
         route = _create_route(portal, settings_portal, city_in_id, city_out_id)
         logger.info('Route: \n{}'.format(route, indent=2, ensure_ascii=False))
+        document['Routes'] = route
         # Services
         services = _create_service(deal)
         logger.info('Services: \n{}'.format(
             services, indent=2, ensure_ascii=False))
+        document['Services'] = services
+        document['Client'] = {
+            'INN': company_inn,
+            'Name': company_name,
+            'IsOrganization': 'true' if initial_data.get(
+                'is_organization') == 'Y' else 'false'
+        }
+        logger.info('Document: \n{}'.format(document, indent=2,
+                                            ensure_ascii=False))
 
     except RuntimeError as ex:
         _response_for_bp(
