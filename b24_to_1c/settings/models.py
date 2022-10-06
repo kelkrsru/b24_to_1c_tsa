@@ -18,6 +18,12 @@ class SettingsPortal(models.Model):
         verbose_name='Адрес сервера',
         help_text='Адрес сервера soap',
     )
+    my_company_inn = models.CharField(
+        verbose_name='ИНН моей компании',
+        help_text='ИНН моей компании для передачи в 1С',
+        max_length=20,
+        default='2465253470',
+    )
     cargo_smart_id = models.PositiveSmallIntegerField(
         verbose_name='ID smart процесса Груз',
         help_text='ID smart процесса, в котором ведется учет грузов',
@@ -106,6 +112,12 @@ class SettingsPortal(models.Model):
         help_text='Код поля Страна города в универсальном списке',
         max_length=30,
         default='PROPERTY_183',
+    )
+    document_number_in_1c_code = models.CharField(
+        verbose_name='Код поля Номер заявки в 1С',
+        help_text='Код поля Номер заявки в 1С в сделке',
+        max_length=30,
+        default='UF_CRM_1665034515'
     )
     portal = models.OneToOneField(
         Portals,

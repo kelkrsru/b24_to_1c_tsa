@@ -10,7 +10,7 @@ from requests.auth import HTTPBasicAuth
 from zeep import Transport, Client
 
 from core.bitrix24.bitrix24 import ActivityB24, DealB24, SmartProcessB24, \
-    ListB24, CompanyB24
+    ListB24
 from core.models import Portals
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
@@ -20,8 +20,7 @@ from pybitrix24 import Bitrix24
 from settings.models import SettingsPortal
 from django.conf import settings
 
-from .messages import MESSAGES_FOR_BP, MESSAGES_FOR_LOG
-from .models import Activity
+from activities.models import Activity
 
 
 @csrf_exempt
@@ -93,7 +92,7 @@ def b24_to_1c(request):
     try:
         deal = DealB24(portal, initial_data['deal_id'])
         deal.get_all_products()
-        logger.debug('Get products: \n{}'.format(
+        logger.debug('Products in deal: \n{}'.format(
             json.dumps(deal.products, indent=2, ensure_ascii=False)
         ))
 
@@ -107,92 +106,24 @@ def b24_to_1c(request):
                 return_values={'result': f'Error: company has not inn'},
             )
             return HttpResponse(status=HTTPStatus.OK)
-        logger.info(f'Company properties: {company_name = }, {company_inn = }')
-
-        cargo_smart = SmartProcessB24(portal, settings_portal.cargo_smart_id)
-        cargo_smart_elements = cargo_smart.get_elements_for_entity(deal.id)
-        if not cargo_smart_elements:
-            logger.info('Deal has not cargo smart elements')
-        cargo_smart_element = cargo_smart_elements[0]
-        logger.debug('Checked cargo: \n{}'.format(json.dumps(
-            cargo_smart_element, indent=2, ensure_ascii=False)))
-        number_awb = cargo_smart_element.get(
-            settings_portal.number_awb_code) or None
-        weight_fact = cargo_smart_element.get(
-            settings_portal.weight_fact_code) or None
-        weight_pay = cargo_smart_element.get(
-            settings_portal.weight_pay_code) or None
-        count_position = cargo_smart_element.get(
-            settings_portal.count_position_code) or None
-        airline_id = cargo_smart_element.get(
-            settings_portal.airline_code) or None
-        city_in_id = cargo_smart_element.get(
-            settings_portal.route_in_code) or None
-        city_out_id = cargo_smart_element.get(
-            settings_portal.route_out_code) or None
-        logger.info(f'Cargo info: {number_awb = }, {weight_fact = }, '
-                    f'{weight_pay = }, {count_position = }, {airline_id = }, '
-                    f'{city_in_id = }, {city_out_id = }')
-
-        if airline_id:
-            airline_list = ListB24(portal, settings_portal.airline_list_id)
-            airline = airline_list.get_element_by_id(airline_id)[0]
-            logger.debug('Airline element: \n{}'.format(
-                airline, indent=2, ensure_ascii=False))
-            airline_name = list(airline.get(
-                settings_portal.airline_name_code).values())[0]
-            airline_code = list(airline.get(
-                settings_portal.airline_code_code).values())[0]
-        else:
-            airline_name = None
-            airline_code = None
-        logger.info(f'Airline info: {airline_name = }, {airline_code = }')
-
-        city_list = ListB24(portal, settings_portal.city_list_id)
-        if city_in_id:
-            city_in = city_list.get_element_by_id(city_in_id)[0]
-            logger.debug('City_in element: \n{}'.format(
-                city_in, indent=2, ensure_ascii=False))
-            city_in_name = city_in.get(settings_portal.city_name_code)
-            city_in_code = list(city_in.get(
-                settings_portal.city_code_code).values())[0]
-            city_in_country = list(city_in.get(
-                settings_portal.city_country_code).values())[0]
-        else:
-            city_in_name = None
-            city_in_code = None
-            city_in_country = None
-        logger.info(f'City_in info: {city_in_name = }, {city_in_code = }, '
-                    f'{city_in_country = }')
-        if city_out_id:
-            city_out = city_list.get_element_by_id(city_out_id)[0]
-            logger.debug('City_out element: \n{}'.format(
-                city_out, indent=2, ensure_ascii=False))
-            city_out_name = city_out.get(settings_portal.city_name_code)
-            city_out_code = list(city_out.get(
-                settings_portal.city_code_code).values())[0]
-            city_out_country = list(city_out.get(
-                settings_portal.city_country_code).values())[0]
-        else:
-            city_out_name = None
-            city_out_code = None
-            city_out_country = None
-        logger.info(f'City_out info: {city_out_name = }, {city_out_code = }, '
-                    f'{city_out_country = }')
-
+        logger.info(f'Company: {company_name = }, {company_inn = }')
+        # Document
         document_date = datetime.datetime.strptime(
             initial_data.get('document_date'), '%d.%m.%Y').strftime('%Y-%m-%d')
-        logger.info(f'Document date: {document_date = }')
-
-        services = []
-        for product in deal.products:
-            services.append({
-                'Name': product.get('PRODUCT_NAME'),
-                'Count': product.get('QUANTITY'),
-                'Price': product.get('PRICE'),
-                'Unit': product.get('MEASURE_NAME'),
-                'TaxRate': f'{product.get("TAX_RATE")}%',
-            })
+        document, airline_id, city_in_id, city_out_id = _create_document(
+            portal, settings_portal, deal)
+        document['DocDate'] = document_date
+        logger.info('Document: \n{}'.format(document, indent=2,
+                                            ensure_ascii=False))
+        # Airline
+        airline = _create_airline(portal, settings_portal, airline_id)
+        logger.info('Airline: \n{}'.format(airline, indent=2,
+                                           ensure_ascii=False))
+        # Route
+        route = _create_route(portal, settings_portal, city_in_id, city_out_id)
+        logger.info('Route: \n{}'.format(route, indent=2, ensure_ascii=False))
+        # Services
+        services = _create_service(deal)
         logger.info('Services: \n{}'.format(
             services, indent=2, ensure_ascii=False))
 
@@ -260,6 +191,94 @@ def _check_initial_data(portal, initial_data):
             return_values={'result': f'Error: {ex.args[0]}'},
         )
         return HttpResponse(status=HTTPStatus.OK)
+
+
+def _create_document(portal, settings_portal, deal):
+    """Method for building document."""
+    cargo_smart = SmartProcessB24(portal, settings_portal.cargo_smart_id)
+    cargo_smart_elements = cargo_smart.get_elements_for_entity(deal.id)
+    cargo_smart_element = cargo_smart_elements[0]
+    number_awb = cargo_smart_element.get(
+        settings_portal.number_awb_code) or None
+    weight_fact = cargo_smart_element.get(
+        settings_portal.weight_fact_code) or None
+    weight_pay = cargo_smart_element.get(
+        settings_portal.weight_pay_code) or None
+    count_position = cargo_smart_element.get(
+        settings_portal.count_position_code) or None
+    airline_id = cargo_smart_element.get(
+        settings_portal.airline_code) or None
+    city_in_id = cargo_smart_element.get(
+        settings_portal.route_in_code) or None
+    city_out_id = cargo_smart_element.get(
+        settings_portal.route_out_code) or None
+    document_number = deal.properties.get(
+        settings_portal.document_number_in_1c_code) or None
+
+    return {
+               'DocNumber': document_number,
+               'NumberAWB': number_awb,
+               'WeightPaid': weight_pay,
+               'WeightFact': weight_fact,
+               'Positions': count_position,
+               'Tax': '1',
+               'CompanyINN': settings_portal.my_company_inn,
+           }, airline_id, city_in_id, city_out_id
+
+
+def _create_route(portal, settings_portal, city_in_id, city_out_id):
+    """Method for building router."""
+    route = []
+    city_list = ListB24(portal, settings_portal.city_list_id)
+    for city_id in [city_in_id, city_out_id]:
+        if city_id:
+            city = city_list.get_element_by_id(city_id)[0]
+            city_name = city.get(settings_portal.city_name_code)
+            city_code = list(city.get(
+                settings_portal.city_code_code).values())[0]
+            city_country = list(city.get(
+                settings_portal.city_country_code).values())[0]
+        else:
+            city_name = None
+            city_code = None
+            city_country = None
+        route.append({
+            'CityCode': city_code, 'CityName': city_name,
+            'CountryCode': city_country
+        })
+
+    return route
+
+
+def _create_airline(portal, settings_portal, airline_id):
+    """Method for building airline."""
+    if airline_id:
+        airline_list = ListB24(portal, settings_portal.airline_list_id)
+        airline = airline_list.get_element_by_id(airline_id)[0]
+        airline_name = list(airline.get(
+            settings_portal.airline_name_code).values())[0]
+        airline_code = list(airline.get(
+            settings_portal.airline_code_code).values())[0]
+    else:
+        airline_name = None
+        airline_code = None
+
+    return {'Code': airline_code, 'Name': airline_name}
+
+
+def _create_service(deal):
+    """Method for building services."""
+    services = []
+    for product in deal.products:
+        services.append({
+            'Name': product.get('PRODUCT_NAME'),
+            'Count': product.get('QUANTITY'),
+            'Price': product.get('PRICE'),
+            'Unit': product.get('MEASURE_NAME'),
+            'TaxRate': f'{product.get("TAX_RATE")}%',
+        })
+
+    return services
 
 
 def _send_soap(settings_portal):
