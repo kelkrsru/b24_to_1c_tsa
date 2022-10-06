@@ -115,17 +115,18 @@ def b24_to_1c(request):
         document['DocDate'] = document_date
         # Airline
         airline = _create_airline(portal, settings_portal, airline_id)
-        logger.info('Airline: \n{}'.format(airline, indent=2,
-                                           ensure_ascii=False))
+        logger.info('Airline: \n{}'.format(json.dumps(airline, indent=2,
+                                           ensure_ascii=False)))
         document['Airline'] = airline
         # Route
         route = _create_route(portal, settings_portal, city_in_id, city_out_id)
-        logger.info('Route: \n{}'.format(route, indent=2, ensure_ascii=False))
+        logger.info('Route: \n{}'.format(json.dumps(route, indent=2,
+                                                    ensure_ascii=False)))
         document['Routes'] = route
         # Services
         services = _create_service(deal)
-        logger.info('Services: \n{}'.format(
-            services, indent=2, ensure_ascii=False))
+        logger.info('Services: \n{}'.format(json.dumps(
+            services, indent=2, ensure_ascii=False)))
         document['Services'] = services
         document['Client'] = {
             'INN': company_inn,
@@ -133,8 +134,12 @@ def b24_to_1c(request):
             'IsOrganization': 'true' if initial_data.get(
                 'is_organization') == 'Y' else 'false'
         }
-        logger.info('Document: \n{}'.format(document, indent=2,
-                                            ensure_ascii=False))
+        logger.info('Document: \n{}'.format(json.dumps(document, indent=2,
+                                            ensure_ascii=False)))
+
+        result = _send_soap(settings_portal, document)
+        logger.info('Result: \n{}'.format(json.dumps(result, indent=2,
+                                                     ensure_ascii=False)))
 
     except RuntimeError as ex:
         _response_for_bp(
@@ -157,7 +162,7 @@ def b24_to_1c(request):
         portal,
         initial_data['event_token'],
         f'Успех',
-        return_values={'result': f'Ok: ok'},
+        return_values={'result': f'Ok: {result}'},
     )
     return HttpResponse(status=HTTPStatus.OK)
 
@@ -290,7 +295,7 @@ def _create_service(deal):
     return services
 
 
-def _send_soap(settings_portal):
+def _send_soap(settings_portal, document):
     """Method for send request to 1C with soap client."""
     user = settings_portal.user_soap
     passwd = settings_portal.passwd_soap
@@ -300,22 +305,13 @@ def _send_soap(settings_portal):
     session.auth = HTTPBasicAuth(user, passwd)
     soap = Client(server, transport=Transport(session=session))
 
-    factory = soap.type_factory('ns0')
-    client = factory.Client(INN="5902202276", Name="Тестовая организация")
+    # factory = soap.type_factory('ns0')
+    # client = factory.Client(INN="5902202276", Name="Тестовая организация")
 
-    print(soap.service.POST(
-        Document={
-            "DocDate": "2022-09-20",
-            # "DocNumber": "",
-            # "WeightFact": "0",
-            "Client": client,
-            "Services": [{"Name": "Тест"}, {"Name": "Тест2"}],
-
-        }
-    ))
-    # result = soap.service.AddCRM(Params=json_data)
-    # Закрываем сессию, возвращаем результат
+    result = soap.service.POST(Document=document)
     session.close()
+
+    return result
 
 
 def _response_for_bp(portal, event_token, log_message, return_values=None):
