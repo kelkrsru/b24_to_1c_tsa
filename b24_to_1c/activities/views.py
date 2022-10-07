@@ -5,22 +5,20 @@ import os
 from http import HTTPStatus
 from logging.handlers import RotatingFileHandler
 
-from requests import Session
-from requests.auth import HTTPBasicAuth
-from zeep import Transport, Client
-
-from core.bitrix24.bitrix24 import ActivityB24, DealB24, SmartProcessB24, \
-    ListB24
+from activities.models import Activity
+from core.bitrix24.bitrix24 import (ActivityB24, DealB24, ListB24,
+                                    SmartProcessB24)
 from core.models import Portals
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from pybitrix24 import Bitrix24
+from requests import Session
+from requests.auth import HTTPBasicAuth
 from settings.models import SettingsPortal
-from django.conf import settings
-
-from activities.models import Activity
+from zeep import Client, Transport
 
 
 @csrf_exempt
@@ -102,8 +100,8 @@ def b24_to_1c(request):
             _response_for_bp(
                 portal,
                 initial_data['event_token'],
-                f'Ошибка: У компании в сделке не найден ИНН',
-                return_values={'result': f'Error: company has not inn'},
+                'Ошибка: У компании в сделке не найден ИНН',
+                return_values={'result': 'Error: company has not inn'},
             )
             return HttpResponse(status=HTTPStatus.OK)
         logger.info(f'Company: {company_name = }, {company_inn = }')
@@ -113,10 +111,11 @@ def b24_to_1c(request):
         document, airline_id, city_in_id, city_out_id = _create_document(
             portal, settings_portal, deal)
         document['DocDate'] = document_date
+        document['Tax'] = '1' if initial_data.get('tax') == 'Y' else '0'
         # Airline
         airline = _create_airline(portal, settings_portal, airline_id)
         logger.info('Airline: \n{}'.format(json.dumps(airline, indent=2,
-                                           ensure_ascii=False)))
+                                                      ensure_ascii=False)))
         document['Airline'] = airline
         # Route
         route = _create_route(portal, settings_portal, city_in_id, city_out_id)
@@ -135,11 +134,45 @@ def b24_to_1c(request):
                 'is_organization') == 'Y' else 'false'
         }
         logger.info('Document: \n{}'.format(json.dumps(document, indent=2,
-                                            ensure_ascii=False)))
+                                                       ensure_ascii=False)))
 
         result = _send_soap(settings_portal, document)
         logger.info('Result: \n{}'.format(json.dumps(result, indent=2,
                                                      ensure_ascii=False)))
+
+        if result.get('Status') == 'Error':
+            _response_for_bp(
+                portal,
+                initial_data['event_token'],
+                'Ошибка',
+                return_values={'result': f'Error: {result.get("Description")}'}
+            )
+            return HttpResponse(status=HTTPStatus.OK)
+
+        link_document_print = (result.get('PrintBill')
+                               + settings_portal.link_get_print)
+
+        fields = {
+            settings_portal.document_number_in_1c_code: result.get(
+                'DocRequest'),
+            settings_portal.bill_number_in_1c_code: result.get('DocBill'),
+            settings_portal.sale_number_in_1c_code: result.get('DocSale'),
+            settings_portal.invoice_number_in_1c_code: result.get(
+                'DocInvoice'),
+            settings_portal.link_print_in_1c_code: link_document_print
+        }
+
+        result_updated_deal = deal.update(fields)
+        logger.info('Result updated deal: \n{}'.format(json.dumps(
+            result_updated_deal, indent=2, ensure_ascii=False)))
+
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Успех',
+            return_values={'result': 'Success'},
+        )
+        return HttpResponse(status=HTTPStatus.OK)
 
     except RuntimeError as ex:
         _response_for_bp(
@@ -157,14 +190,6 @@ def b24_to_1c(request):
             return_values={'result': f'Error: {ex.args[0]}'},
         )
         return HttpResponse(status=HTTPStatus.OK)
-
-    _response_for_bp(
-        portal,
-        initial_data['event_token'],
-        f'Успех',
-        return_values={'result': f'Ok: {result}'},
-    )
-    return HttpResponse(status=HTTPStatus.OK)
 
 
 def _create_portal(initial_data):
@@ -190,6 +215,7 @@ def _get_initial_data(request):
         'is_organization': request.POST.get('properties[is_organization]'),
         'client_inn': request.POST.get('properties[client_inn]'),
         'client_name': request.POST.get('properties[client_name]'),
+        'tax': request.POST.get('properties[tax]'),
     }
 
 
@@ -229,15 +255,13 @@ def _create_document(portal, settings_portal, deal):
     document_number = deal.properties.get(
         settings_portal.document_number_in_1c_code) or None
 
-    return {
-               'DocNumber': document_number,
-               'NumberAWB': number_awb,
-               'WeightPaid': weight_pay,
-               'WeightFact': weight_fact,
-               'Positions': count_position,
-               'Tax': '1',
-               'CompanyINN': settings_portal.my_company_inn,
-           }, airline_id, city_in_id, city_out_id
+    return ({'DocNumber': document_number,
+             'NumberAWB': number_awb,
+             'WeightPaid': weight_pay,
+             'WeightFact': weight_fact,
+             'Positions': count_position,
+             'CompanyINN': settings_portal.my_company_inn}, airline_id,
+            city_in_id, city_out_id)
 
 
 def _create_route(portal, settings_portal, city_in_id, city_out_id):
@@ -304,9 +328,6 @@ def _send_soap(settings_portal, document):
     session = Session()
     session.auth = HTTPBasicAuth(user, passwd)
     soap = Client(server, transport=Transport(session=session))
-
-    # factory = soap.type_factory('ns0')
-    # client = factory.Client(INN="5902202276", Name="Тестовая организация")
 
     result = soap.service.POST(Document=document)
     session.close()

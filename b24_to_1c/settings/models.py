@@ -24,6 +24,13 @@ class SettingsPortal(models.Model):
         max_length=20,
         default='2465253470',
     )
+    link_get_print = models.URLField(
+        verbose_name='Ссылка на файл',
+        help_text='Основная часть ссылки для получения печатных форм '
+                  'документов',
+        default='https://iclient.1c-hosting.com/S0017033/'
+                'S0017033_UNF_vn6er6vx9s/hs/apr_GetDocuments/download/'
+    )
     cargo_smart_id = models.PositiveSmallIntegerField(
         verbose_name='ID smart процесса Груз',
         help_text='ID smart процесса, в котором ведется учет грузов',
