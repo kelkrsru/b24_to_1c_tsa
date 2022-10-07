@@ -7,7 +7,7 @@ from logging.handlers import RotatingFileHandler
 
 from activities.models import Activity
 from core.bitrix24.bitrix24 import (ActivityB24, DealB24, ListB24,
-                                    SmartProcessB24)
+                                    SmartProcessB24, ProductRowB24)
 from core.models import Portals
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -60,6 +60,50 @@ def uninstall(request):
             'error_name': ex.args[0],
             'error_description': ex.args[1]})
     return JsonResponse({'result': result})
+
+
+@csrf_exempt
+def add_productrow(request):
+    """Method from adding productrow in deal products."""
+    initial_data = _get_initial_data_add_productrow(request)
+    portal, settings_portal = _create_portal(initial_data)
+    _check_initial_data(portal, initial_data)
+
+    try:
+        fields = {
+            'ownerId': initial_data.get('deal_id'),
+            'ownerType': 'D',
+            'productName': initial_data.get('name'),
+            'price': initial_data.get('price'),
+            'quantity': initial_data.get('quantity')
+        }
+        productrow = ProductRowB24(portal, 0)
+        result = productrow.add(fields)
+
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Успех',
+            return_values={'result': f'Success: {result}'},
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+
+    except RuntimeError as ex:
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            f'Ошибка: {ex.args[0]}',
+            return_values={'result': f'Error: {ex.args[1]}'},
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+    except Exception as ex:
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            f'Ошибка: {ex.args[0]}',
+            return_values={'result': f'Error: {ex.args[0]}'},
+        )
+        return HttpResponse(status=HTTPStatus.OK)
 
 
 @csrf_exempt
@@ -216,6 +260,20 @@ def _get_initial_data(request):
         'client_inn': request.POST.get('properties[client_inn]'),
         'client_name': request.POST.get('properties[client_name]'),
         'tax': request.POST.get('properties[tax]'),
+    }
+
+
+def _get_initial_data_add_productrow(request):
+    """Method for get initial data from Post request for add_productrow."""
+    if request.method != 'POST':
+        return HttpResponse(status=HTTPStatus.BAD_REQUEST)
+    return {
+        'member_id': request.POST.get('auth[member_id]'),
+        'event_token': request.POST.get('event_token'),
+        'deal_id': request.POST.get('properties[deal_id]') or 0,
+        'name': request.POST.get('properties[productrow_name]'),
+        'price': request.POST.get('properties[productrow_price]'),
+        'quantity': request.POST.get('properties[productrow_quantity]'),
     }
 
 
