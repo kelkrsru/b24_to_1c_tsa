@@ -75,7 +75,9 @@ def add_productrow(request):
             'ownerType': 'D',
             'productName': initial_data.get('name'),
             'price': initial_data.get('price'),
-            'quantity': initial_data.get('quantity')
+            'quantity': initial_data.get('quantity'),
+            'taxRate': '20',
+            'taxIncluded': 'Y',
         }
         productrow = ProductRowB24(portal, 0)
         result = productrow.add(fields)
