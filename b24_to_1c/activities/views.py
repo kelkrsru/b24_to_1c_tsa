@@ -195,8 +195,8 @@ def b24_to_1c(request):
             )
             return HttpResponse(status=HTTPStatus.OK)
 
-        link_document_print = (result.get('PrintBill')
-                               + settings_portal.link_get_print)
+        link_document_print = (settings_portal.link_get_print
+                               + result.get('PrintBill'))
 
         fields = {
             settings_portal.document_number_in_1c_code: result.get(
