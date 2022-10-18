@@ -299,7 +299,7 @@ def _create_document(portal, settings_portal, deal):
     cargo_smart_elements = cargo_smart.get_elements_for_entity(deal.id)
     cargo_smart_element = cargo_smart_elements[0]
     number_awb = cargo_smart_element.get(
-        settings_portal.number_awb_code) or None
+        settings_portal.number_awb_code)[0] or None
     weight_fact = cargo_smart_element.get(
         settings_portal.weight_fact_code) or None
     weight_pay = cargo_smart_element.get(
