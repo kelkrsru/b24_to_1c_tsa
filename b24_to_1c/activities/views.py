@@ -154,10 +154,15 @@ def b24_to_1c(request):
         # Document
         document_date = datetime.datetime.strptime(
             initial_data.get('document_date'), '%d.%m.%Y').strftime('%Y-%m-%d')
+        transfer_date = datetime.datetime.strptime(
+            initial_data.get('transfer_date'), '%d.%m.%Y').strftime('%Y-%m-%d')
         document, airline_id, city_in_id, city_out_id = _create_document(
             portal, settings_portal, deal)
         document['DocDate'] = document_date
+        document['TransportationDate'] = transfer_date
         document['Tax'] = '1' if initial_data.get('tax') == 'Y' else '0'
+        document['IsTaxIncluded'] = ('1' if initial_data.get('tax_include') ==
+                                     'Y' else '0')
         # Airline
         airline = _create_airline(portal, settings_portal, airline_id)
         logger.info('Airline: \n{}'.format(json.dumps(airline, indent=2,
@@ -257,11 +262,13 @@ def _get_initial_data(request):
         'member_id': request.POST.get('auth[member_id]'),
         'event_token': request.POST.get('event_token'),
         'document_date': request.POST.get('properties[document_date]'),
+        'transfer_date': request.POST.get('properties[transfer_date]'),
         'deal_id': request.POST.get('properties[deal_id]') or 0,
         'is_organization': request.POST.get('properties[is_organization]'),
         'client_inn': request.POST.get('properties[client_inn]'),
         'client_name': request.POST.get('properties[client_name]'),
         'tax': request.POST.get('properties[tax]'),
+        'tax_include': request.POST.get('properties[tax_include]'),
     }
 
 
