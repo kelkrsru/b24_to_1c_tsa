@@ -201,13 +201,13 @@ def b24_to_1c(request):
             return HttpResponse(status=HTTPStatus.OK)
 
         link_print_bill = (settings_portal.link_get_print + 'bill/'
-                           + result.get('docGuid'))
+                           + result.get('DocGuid'))
         link_print_bill_stamp = (settings_portal.link_get_print + 'bill/'
-                                 + result.get('docGuid') + '?facsimile=1')
+                                 + result.get('DocGuid') + '?facsimile=1')
         link_print_invoice = (settings_portal.link_get_print + 'invoice/'
-                              + result.get('docGuid'))
+                              + result.get('DocGuid'))
         link_print_invoice_stamp = (settings_portal.link_get_print + 'invoice/'
-                                    + result.get('docGuid') + '?facsimile=1')
+                                    + result.get('DocGuid') + '?facsimile=1')
 
         fields = {
             settings_portal.document_number_in_1c_code: result.get(
