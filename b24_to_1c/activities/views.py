@@ -164,10 +164,11 @@ def b24_to_1c(request):
         document['IsTaxIncluded'] = ('1' if initial_data.get('tax_include') ==
                                             'Y' else '0')
         # Airline
-        airline = _create_airline(portal, settings_portal, airline_id)
-        logger.info('Airline: \n{}'.format(json.dumps(airline, indent=2,
-                                                      ensure_ascii=False)))
-        document['Airline'] = airline
+        if airline_id:
+            airline = _create_airline(portal, settings_portal, airline_id)
+            logger.info('Airline: \n{}'.format(json.dumps(airline, indent=2,
+                                                          ensure_ascii=False)))
+            document['Airline'] = airline
         # Route
         route = _create_route(portal, settings_portal, city_in_id, city_out_id)
         logger.info('Route: \n{}'.format(json.dumps(route, indent=2,
