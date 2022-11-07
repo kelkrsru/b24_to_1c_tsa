@@ -19,6 +19,7 @@ from requests import Session
 from requests.auth import HTTPBasicAuth
 from settings.models import SettingsPortal
 from zeep import Client, Transport
+import logging.config
 
 
 @csrf_exempt
@@ -111,6 +112,28 @@ def add_productrow(request):
 @csrf_exempt
 def b24_to_1c(request):
     """Method send request from b24 to 1C."""
+    logging.config.dictConfig({
+        'version': 1,
+        'formatters': {
+            'verbose': {
+                'format': '%(name)s: %(message)s'
+            }
+        },
+        'handlers': {
+            'console': {
+                'level': 'DEBUG',
+                'class': 'logging.StreamHandler',
+                'formatter': 'verbose',
+            },
+        },
+        'loggers': {
+            'zeep.transports': {
+                'level': 'DEBUG',
+                'propagate': True,
+                'handlers': ['console'],
+            },
+        }
+    })
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     if not logger.hasHandlers():
