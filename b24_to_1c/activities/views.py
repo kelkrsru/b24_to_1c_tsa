@@ -165,7 +165,7 @@ def b24_to_1c(request):
                                             'Y' else '0')
         # Airline
         logger.debug(f'Start airline: {airline_id = }')
-        if airline_id > 0:
+        if airline_id and airline_id > 0:
             airline = _create_airline(portal, settings_portal, airline_id)
             logger.info('Airline: \n{}'.format(json.dumps(airline, indent=2,
                                                           ensure_ascii=False)))
