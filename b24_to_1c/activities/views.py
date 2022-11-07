@@ -162,16 +162,15 @@ def b24_to_1c(request):
         document['TransportationDate'] = transfer_date
         document['Tax'] = '1' if initial_data.get('tax') == 'Y' else '0'
         document['IsTaxIncluded'] = ('1' if initial_data.get('tax_include') ==
-                                            'Y' else '0')
+                                     'Y' else '0')
+        document['CompanyINN'] = initial_data.get('my_company_inn')
         # Airline
-        logger.debug(f'Start airline: {airline_id = }')
         if airline_id and airline_id > 0:
             airline = _create_airline(portal, settings_portal, airline_id)
             logger.info('Airline: \n{}'.format(json.dumps(airline, indent=2,
                                                           ensure_ascii=False)))
             document['Airline'] = airline
         # Route
-        logger.debug('Start route')
         route = _create_route(portal, settings_portal, city_in_id, city_out_id)
         logger.info('Route: \n{}'.format(json.dumps(route, indent=2,
                                                     ensure_ascii=False)))
@@ -282,6 +281,7 @@ def _get_initial_data(request):
         'client_name': request.POST.get('properties[client_name]'),
         'tax': request.POST.get('properties[tax]'),
         'tax_include': request.POST.get('properties[tax_include]'),
+        'my_company_inn': request.POST.get('properties[my_company_inn]'),
     }
 
 
@@ -339,9 +339,7 @@ def _create_document(portal, settings_portal, deal):
              'NumberAWB': number_awb,
              'WeightPaid': weight_pay,
              'WeightFact': weight_fact,
-             'Positions': count_position,
-             'CompanyINN': settings_portal.my_company_inn}, airline_id,
-            city_in_id, city_out_id)
+             'Positions': count_position}, airline_id, city_in_id, city_out_id)
 
 
 def _create_route(portal, settings_portal, city_in_id, city_out_id):
