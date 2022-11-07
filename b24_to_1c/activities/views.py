@@ -162,7 +162,7 @@ def b24_to_1c(request):
         document['TransportationDate'] = transfer_date
         document['Tax'] = '1' if initial_data.get('tax') == 'Y' else '0'
         document['IsTaxIncluded'] = ('1' if initial_data.get('tax_include') ==
-                                     'Y' else '0')
+                                            'Y' else '0')
         # Airline
         airline = _create_airline(portal, settings_portal, airline_id)
         logger.info('Airline: \n{}'.format(json.dumps(airline, indent=2,
@@ -200,8 +200,14 @@ def b24_to_1c(request):
             )
             return HttpResponse(status=HTTPStatus.OK)
 
-        link_document_print = (settings_portal.link_get_print
-                               + result.get('PrintBill'))
+        link_print_bill = (settings_portal.link_get_print + 'bill/'
+                           + result.get('docGuid'))
+        link_print_bill_stamp = (settings_portal.link_get_print + 'bill/'
+                                 + result.get('docGuid') + '?facsimile=1')
+        link_print_invoice = (settings_portal.link_get_print + 'invoice/'
+                              + result.get('docGuid'))
+        link_print_invoice_stamp = (settings_portal.link_get_print + 'invoice/'
+                                    + result.get('docGuid') + '?facsimile=1')
 
         fields = {
             settings_portal.document_number_in_1c_code: result.get(
@@ -210,7 +216,11 @@ def b24_to_1c(request):
             settings_portal.sale_number_in_1c_code: result.get('DocSale'),
             settings_portal.invoice_number_in_1c_code: result.get(
                 'DocInvoice'),
-            settings_portal.link_print_in_1c_code: link_document_print
+            settings_portal.link_print_bill_code: link_print_bill,
+            settings_portal.link_print_bill_stamp_code: link_print_bill_stamp,
+            settings_portal.link_print_invoice_code: link_print_invoice,
+            settings_portal.link_print_invoice_stamp_code: (
+                link_print_invoice_stamp),
         }
 
         result_updated_deal = deal.update(fields)

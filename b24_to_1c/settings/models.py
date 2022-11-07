@@ -144,11 +144,29 @@ class SettingsPortal(models.Model):
         max_length=30,
         default='UF_CRM_1665054125'
     )
-    link_print_in_1c_code = models.CharField(
-        verbose_name='Код поля Ссылка на печатную форму в 1С',
-        help_text='Код поля Ссылка на печатную форму в 1С в сделке',
+    link_print_bill_code = models.CharField(
+        verbose_name='Код поля Ссылка на счет в 1С',
+        help_text='Код поля Ссылка на счет в 1С в сделке',
         max_length=30,
         default='UF_CRM_1665054289'
+    )
+    link_print_bill_stamp_code = models.CharField(
+        verbose_name='Код поля Ссылка на счет с подписью в 1С',
+        help_text='Код поля Ссылка на счет с подписью в 1С в сделке',
+        max_length=30,
+        default='UF_CRM_1667785528'
+    )
+    link_print_invoice_code = models.CharField(
+        verbose_name='Код поля Ссылка на УПД в 1С',
+        help_text='Код поля Ссылка на УПД в 1С в сделке',
+        max_length=30,
+        default='UF_CRM_1667785549'
+    )
+    link_print_invoice_stamp_code = models.CharField(
+        verbose_name='Код поля Ссылка на УПД с подписью в 1С',
+        help_text='Код поля Ссылка на УПД с подписью в 1С в сделке',
+        max_length=30,
+        default='UF_CRM_1667785572'
     )
     portal = models.OneToOneField(
         Portals,
