@@ -112,28 +112,28 @@ def add_productrow(request):
 @csrf_exempt
 def b24_to_1c(request):
     """Method send request from b24 to 1C."""
-    logging.config.dictConfig({
-        'version': 1,
-        'formatters': {
-            'verbose': {
-                'format': '%(name)s: %(message)s'
-            }
-        },
-        'handlers': {
-            'console': {
-                'level': 'DEBUG',
-                'class': 'logging.StreamHandler',
-                'formatter': 'verbose',
-            },
-        },
-        'loggers': {
-            'zeep.transports': {
-                'level': 'DEBUG',
-                'propagate': True,
-                'handlers': ['console'],
-            },
-        }
-    })
+    # logging.config.dictConfig({
+    #     'version': 1,
+    #     'formatters': {
+    #         'verbose': {
+    #             'format': '%(name)s: %(message)s'
+    #         }
+    #     },
+    #     'handlers': {
+    #         'console': {
+    #             'level': 'DEBUG',
+    #             'class': 'logging.StreamHandler',
+    #             'formatter': 'verbose',
+    #         },
+    #     },
+    #     'loggers': {
+    #         'zeep.transports': {
+    #             'level': 'DEBUG',
+    #             'propagate': True,
+    #             'handlers': ['console'],
+    #         },
+    #     }
+    # })
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     if not logger.hasHandlers():
@@ -147,7 +147,7 @@ def b24_to_1c(request):
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
-    logger.info('*****-----Start application-----*****')
+    logger.info('\n\n*****-----Start application-----*****')
 
     initial_data = _get_initial_data(request)
     logger.debug('Initial data: \n{}'.format(
@@ -225,22 +225,31 @@ def b24_to_1c(request):
             )
             return HttpResponse(status=HTTPStatus.OK)
 
-        link_print_bill = (settings_portal.link_get_print + 'bill/'
-                           + result.get('DocGuid'))
-        link_print_bill_stamp = (settings_portal.link_get_print + 'bill/'
-                                 + result.get('DocGuid') + '?facsimile=1')
-        link_print_invoice = (settings_portal.link_get_print + 'invoice/'
-                              + result.get('DocGuid'))
-        link_print_invoice_stamp = (settings_portal.link_get_print + 'invoice/'
-                                    + result.get('DocGuid') + '?facsimile=1')
+        if 'DocGuid' in result:
+            link_print_bill = (settings_portal.link_get_print + 'bill/'
+                               + result.get('DocGuid'))
+            link_print_bill_stamp = (settings_portal.link_get_print + 'bill/'
+                                     + result.get('DocGuid') + '?facsimile=1')
+            link_print_invoice = (settings_portal.link_get_print + 'invoice/'
+                                  + result.get('DocGuid'))
+            link_print_invoice_stamp = (settings_portal.link_get_print +
+                                        'invoice/' + result.get('DocGuid') +
+                                        '?facsimile=1')
+        else:
+            link_print_bill = ''
+            link_print_bill_stamp = ''
+            link_print_invoice = ''
+            link_print_invoice_stamp = ''
 
         fields = {
             settings_portal.document_number_in_1c_code: result.get(
                 'DocRequest'),
-            settings_portal.bill_number_in_1c_code: result.get('DocBill'),
-            settings_portal.sale_number_in_1c_code: result.get('DocSale'),
-            settings_portal.invoice_number_in_1c_code: result.get(
-                'DocInvoice'),
+            settings_portal.bill_number_in_1c_code: (
+                result.get('DocBill') if 'DocBill' in result else ''),
+            settings_portal.sale_number_in_1c_code: (
+                result.get('DocSale') if 'DocSale' in result else ''),
+            settings_portal.invoice_number_in_1c_code: (
+                result.get('DocInvoice') if 'DocInvoice' in result else ''),
             settings_portal.link_print_bill_code: link_print_bill,
             settings_portal.link_print_bill_stamp_code: link_print_bill_stamp,
             settings_portal.link_print_invoice_code: link_print_invoice,
