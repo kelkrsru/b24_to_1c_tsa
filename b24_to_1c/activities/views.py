@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import os
+import requests
 from http import HTTPStatus
 from logging.handlers import RotatingFileHandler
 
@@ -164,6 +165,7 @@ def b24_to_1c(request):
         ))
 
         company_inn = initial_data.get('client_inn')
+        company_kpp = initial_data.get('client_kpp')
         company_name = initial_data.get('client_name')
         if not company_inn:
             _response_for_bp(
@@ -173,7 +175,8 @@ def b24_to_1c(request):
                 return_values={'result': 'Error: company has not inn'},
             )
             return HttpResponse(status=HTTPStatus.OK)
-        logger.info(f'Company: {company_name = }, {company_inn = }')
+        logger.info(f'Company: {company_name = }, {company_inn = }, '
+                    f'{company_kpp = }')
         # Document
         document_date = datetime.datetime.strptime(
             initial_data.get('document_date'), '%d.%m.%Y').strftime('%Y-%m-%d')
@@ -205,6 +208,7 @@ def b24_to_1c(request):
         document['Services'] = services
         document['Client'] = {
             'INN': company_inn,
+            'KPP': company_kpp,
             'Name': company_name,
             'IsOrganization': 'true' if initial_data.get(
                 'is_organization') == 'Y' else 'false'
@@ -310,6 +314,7 @@ def _get_initial_data(request):
         'deal_id': request.POST.get('properties[deal_id]') or 0,
         'is_organization': request.POST.get('properties[is_organization]'),
         'client_inn': request.POST.get('properties[client_inn]'),
+        'client_kpp': request.POST.get('properties[client_kpp]'),
         'client_name': request.POST.get('properties[client_name]'),
         'tax': request.POST.get('properties[tax]'),
         'tax_include': request.POST.get('properties[tax_include]'),
@@ -443,6 +448,19 @@ def _send_soap(settings_portal, document):
     session.close()
 
     return json.loads(result)
+
+
+def _get_file(settings_portal, link_file):
+    """Method for get file from site 1c."""
+    user = settings_portal.user_soap
+    passwd = settings_portal.passwd_soap
+
+    with requests.Session() as s:
+        s.auth = (user, passwd)
+        upload_file = s.get(link_file)
+
+    with open('uploads/upload.pdf', 'wb') as file:
+        file.write(upload_file.content)
 
 
 def _response_for_bp(portal, event_token, log_message, return_values=None):
