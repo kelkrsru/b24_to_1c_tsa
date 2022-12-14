@@ -208,11 +208,12 @@ def b24_to_1c(request):
         document['Services'] = services
         document['Client'] = {
             'INN': company_inn,
-            'KPP': company_kpp,
             'Name': company_name,
             'IsOrganization': 'true' if initial_data.get(
                 'is_organization') == 'Y' else 'false'
         }
+        if company_kpp:
+            document['Client']['KPP'] = company_kpp
         logger.info('Document: \n{}'.format(json.dumps(document, indent=2,
                                                        ensure_ascii=False)))
 
