@@ -9,4 +9,5 @@ urlpatterns = [
     path('uninstall/', views.uninstall, name='uninstall'),
     path('b24-to-1c/', views.b24_to_1c, name='b24_to_1c'),
     path('add-productrow/', views.add_productrow, name='add_productrow'),
+    path('copy-deal/', views.copy_deal, name='copy-deal'),
 ]

@@ -111,6 +111,53 @@ def add_productrow(request):
 
 
 @csrf_exempt
+def copy_deal(request):
+    """Method from copy deal with expenses and clear 1c fields."""
+    initial_data = _get_initial_data_copy_deal(request)
+    portal, settings_portal = _create_portal(initial_data)
+    _check_initial_data(portal, initial_data)
+    return_values = {
+        'result': '',
+        'has_error': 'N',
+        'error_desc': '',
+    }
+
+    try:
+        deal = DealB24(portal, initial_data['deal_id'])
+        return_values['result'] = deal.properties
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Активити успешно завершило свои действия',
+            return_values=return_values,
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+    except RuntimeError as ex:
+        return_values['result'] = 'Ошибка. Просмотр в поле error_desc.'
+        return_values['has_error'] = 'Y'
+        return_values['error_desc'] = (f'Ошибка: {ex.args[0]}. Описание ошибки'
+                                       f': {ex.args[1]}')
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Ошибка в работе активити',
+            return_values=return_values,
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+    except Exception as ex:
+        return_values['result'] = 'Ошибка. Просмотр в поле error_desc.'
+        return_values['has_error'] = 'Y'
+        return_values['error_desc'] = f'Ошибка. Описание ошибки: {ex.args[0]}'
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Ошибка в работе активити',
+            return_values={'result': f'Error: {ex.args[0]}'},
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+
+
+@csrf_exempt
 def b24_to_1c(request):
     """Method send request from b24 to 1C."""
     # logging.config.dictConfig({
@@ -334,6 +381,18 @@ def _get_initial_data_add_productrow(request):
         'name': request.POST.get('properties[productrow_name]'),
         'price': request.POST.get('properties[productrow_price]'),
         'quantity': request.POST.get('properties[productrow_quantity]'),
+    }
+
+
+def _get_initial_data_copy_deal(request):
+    """Method for get initial data from Post request for copy_deal."""
+    if request.method != 'POST':
+        return HttpResponse(status=HTTPStatus.BAD_REQUEST)
+    return {
+        'member_id': request.POST.get('auth[member_id]'),
+        'event_token': request.POST.get('event_token'),
+        'deal_id': request.POST.get('properties[deal_id]') or 0,
+        'is_copy_expenses': request.POST.get('properties[is_copy_expenses]'),
     }
 
 
