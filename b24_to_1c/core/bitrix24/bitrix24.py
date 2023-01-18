@@ -46,7 +46,16 @@ class DealB24(ObjB24):
             'crm.deal.productrows.get', {'id': self.id}
         ))
 
-    def create(self, title, stage_id, responsible_id):
+    def create(self, fields):
+        """Создать сделку в Битрикс24"""
+        return self._check_error(self.bx24.call(
+            'crm.deal.add',
+            {
+                'fields': fields
+            }
+        ))
+
+    def _create(self, title, stage_id, responsible_id):
         """Создать сделку в Битрикс24"""
         return self._check_error(self.bx24.call(
             'crm.deal.add',

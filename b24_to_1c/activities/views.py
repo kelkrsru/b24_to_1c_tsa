@@ -124,6 +124,8 @@ def copy_deal(request):
 
     try:
         deal = DealB24(portal, initial_data['deal_id'])
+        del deal.properties['id']
+        deal.create(deal.properties)
         return_values['result'] = deal.properties
         _response_for_bp(
             portal,
