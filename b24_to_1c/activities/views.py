@@ -124,7 +124,7 @@ def copy_deal(request):
 
     try:
         deal = DealB24(portal, initial_data['deal_id'])
-        del deal.properties['id']
+        del deal.properties['ID']
         deal.create(deal.properties)
         return_values['result'] = deal.properties
         _response_for_bp(
@@ -154,7 +154,7 @@ def copy_deal(request):
             portal,
             initial_data['event_token'],
             'Ошибка в работе активити',
-            return_values={'result': f'Error: {ex.args[0]}'},
+            return_values=return_values,
         )
         return HttpResponse(status=HTTPStatus.OK)
 
