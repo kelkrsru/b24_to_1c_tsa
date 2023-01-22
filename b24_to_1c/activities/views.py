@@ -133,8 +133,6 @@ def copy_deal(request):
 
     try:
         deal = DealB24(portal, initial_data.get('deal_id'))
-        deal_products_rows = ProductRowB24(portal, 0).list(
-            'D', initial_data.get('deal_id'))
         for field in fields_for_del:
             if field not in deal.properties:
                 continue
@@ -146,8 +144,14 @@ def copy_deal(request):
         deal.properties['CLOSED'] = field_closed_value
         deal.properties['IS_NEW'] = field_is_new_value
         new_deal = DealB24(portal, 0)
-        result = new_deal.create(deal.properties)
-        return_values['result'] = deal_products_rows
+        new_deal_id = new_deal.create(deal.properties)
+        deal_products_rows = ProductRowB24(portal, 0).list(
+            'D', initial_data.get('deal_id'))
+        for deal_product_row in deal_products_rows.get('productRows'):
+            del deal_product_row['id']
+        ProductRowB24(portal, 0).set('D', initial_data.get('deal_id'),
+                                     deal_products_rows.get('productRows'))
+        return_values['result'] = f'ID созданной сделки = {new_deal_id}'
         _response_for_bp(
             portal,
             initial_data['event_token'],
