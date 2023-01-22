@@ -113,6 +113,15 @@ def add_productrow(request):
 @csrf_exempt
 def copy_deal(request):
     """Method from copy deal with expenses and clear 1c fields."""
+    fields_for_del = ['ID', 'UF_CRM_1665054060', 'UF_CRM_1665054102',
+                      'UF_CRM_1665054289', 'UF_CRM_1667785528',
+                      'UF_CRM_1667785549', 'UF_CRM_1667785572']
+    field_type_id_value = 'SALE'
+    field_stage_id_value = 'NEW'
+    field_opened_value = 'Y'
+    field_closed_value = 'N'
+    field_is_new_value = 'Y'
+
     initial_data = _get_initial_data_copy_deal(request)
     portal, settings_portal = _create_portal(initial_data)
     _check_initial_data(portal, initial_data)
@@ -123,9 +132,19 @@ def copy_deal(request):
     }
 
     try:
-        deal = DealB24(portal, initial_data['deal_id'])
-        del deal.properties['ID']
-        deal.create(deal.properties)
+        deal = DealB24(portal, initial_data.get('deal_id'))
+        for field in fields_for_del:
+            if field not in deal.properties:
+                continue
+            del deal.properties[field]
+        deal.properties['TITLE'] = f'( КОПИЯ ) {deal.properties["TITLE"]}'
+        deal.properties['TYPE_ID'] = field_type_id_value
+        deal.properties['STAGE_ID'] = field_stage_id_value
+        deal.properties['OPENED'] = field_opened_value
+        deal.properties['CLOSED'] = field_closed_value
+        deal.properties['IS_NEW'] = field_is_new_value
+        new_deal = DealB24(portal, 0)
+        new_deal.create(deal.properties)
         return_values['result'] = deal.properties
         _response_for_bp(
             portal,
