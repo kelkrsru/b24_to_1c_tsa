@@ -11,7 +11,7 @@ class ObjB24:
         self.bx24 = Bitrix24(portal.name)
         self.bx24._access_token = portal.auth_id
         self.id = id_obj
-        if self.GET_PROPS_REST_METHOD and self.id != 0:
+        if self.GET_PROPS_REST_METHOD and self.id:
             self.properties = self._get_properties()
 
     def _get_properties(self):
@@ -38,7 +38,8 @@ class DealB24(ObjB24):
     def __init__(self, portal: Portals, id_obj: int):
         super().__init__(portal, id_obj)
         self.products = None
-        self.responsible = self.properties.get('ASSIGNED_BY_ID')
+        if self.id:
+            self.responsible = self.properties.get('ASSIGNED_BY_ID')
 
     def get_all_products(self):
         """Получить все продукты сделки."""
