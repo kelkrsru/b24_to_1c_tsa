@@ -144,8 +144,8 @@ def copy_deal(request):
         deal.properties['CLOSED'] = field_closed_value
         deal.properties['IS_NEW'] = field_is_new_value
         new_deal = DealB24(portal, 0)
-        new_deal.create(deal.properties)
-        return_values['result'] = deal.properties
+        result = new_deal.create(deal.properties)
+        return_values['result'] = result
         _response_for_bp(
             portal,
             initial_data['event_token'],
