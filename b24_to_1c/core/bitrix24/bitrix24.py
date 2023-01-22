@@ -11,7 +11,7 @@ class ObjB24:
         self.bx24 = Bitrix24(portal.name)
         self.bx24._access_token = portal.auth_id
         self.id = id_obj
-        if self.GET_PROPS_REST_METHOD and self.id:
+        if self.GET_PROPS_REST_METHOD and self.id != 0:
             self.properties = self._get_properties()
 
     def _get_properties(self):
