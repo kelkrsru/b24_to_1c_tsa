@@ -149,9 +149,11 @@ def copy_deal(request):
             'D', initial_data.get('deal_id'))
         for deal_product_row in deal_products_rows.get('productRows'):
             del deal_product_row['id']
-        ProductRowB24(portal, 0).set('D', initial_data.get('deal_id'),
-                                     deal_products_rows.get('productRows'))
+        res = ProductRowB24(portal, 0).set('D', new_deal_id,
+                                           deal_products_rows.get(
+                                               'productRows'))
         return_values['result'] = f'ID созданной сделки = {new_deal_id}'
+        return_values['result'] = res
         _response_for_bp(
             portal,
             initial_data['event_token'],
@@ -262,7 +264,7 @@ def b24_to_1c(request):
         document['TransportationDate'] = transfer_date
         document['Tax'] = '1' if initial_data.get('tax') == 'Y' else '0'
         document['IsTaxIncluded'] = ('1' if initial_data.get('tax_include') ==
-                                     'Y' else '0')
+                                            'Y' else '0')
         document['CompanyINN'] = initial_data.get('my_company_inn')
         # Airline
         if airline_id and airline_id > 0:
