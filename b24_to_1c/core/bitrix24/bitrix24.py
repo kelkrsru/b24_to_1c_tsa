@@ -207,7 +207,7 @@ class ProductRowB24(ObjB24):
     def set(self, owner_type, owner_id, product_rows):
         """Метод для привязки товарных позиций к сущности."""
         return self._check_error(self.bx24.call(
-            'crm.item.productrow.delete',
+            'crm.item.productrow.set',
             {
                 'ownerType': owner_type,
                 'ownerId': owner_id,
@@ -218,7 +218,7 @@ class ProductRowB24(ObjB24):
     def list(self, owner_type, owner_id):
         """Метод для получения товарных позиций по сущности."""
         return self._check_error(self.bx24.call(
-            'crm.item.productrow.delete',
+            'crm.item.productrow.list',
             {
                 'filter': {
                     '=ownerType': owner_type,
