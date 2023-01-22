@@ -158,13 +158,42 @@ class ActivityB24(ObjB24):
         ))
 
 
-class ProductB24(ObjB24):
-    """Класс Товар каталога."""
-    GET_PROPS_REST_METHOD: str = 'crm.product.get'
+class ProductInCatalogB24(ObjB24):
+    """Класс Товар в каталоге."""
+    GET_PROPS_REST_METHOD: str = 'catalog.product.get'
+
+    def __init__(self, portal: Portals, obj_id: int):
+        super().__init__(portal, obj_id)
+        if hasattr(self, 'properties'):
+            self.properties = self.properties.get('product')
+
+    def add(self):
+        """Метод добавления товара в каталог."""
+        method_rest = 'catalog.product.add'
+        params = {'fields': self.properties}
+        result = self.bx24.call(method_rest, params)
+        return self._check_error(result)
 
 
 class ProductRowB24(ObjB24):
     """Класс Товарной позиции."""
+    GET_PROPS_REST_METHOD: str = 'crm.item.productrow.get'
+
+    def __init__(self, portal: Portals, obj_id: int):
+        super().__init__(portal, obj_id)
+        if hasattr(self, 'properties'):
+            self.properties = self.properties.get('productRow')
+            self.id_in_catalog = self.properties.get('productId')
+
+    def update(self, fields):
+        """Метод изменения товарной позиции."""
+        return self._check_error(self.bx24.call(
+            'crm.item.productrow.update',
+            {
+                'id': self.id,
+                'fields': fields
+            }
+        ))
 
     def add(self, fields):
         """Метод добавления товарной позиции."""
@@ -172,6 +201,38 @@ class ProductRowB24(ObjB24):
             'crm.item.productrow.add',
             {
                 'fields': fields
+            }
+        ))
+
+    def set(self, owner_type, owner_id, product_rows):
+        """Метод для привязки товарных позиций к сущности."""
+        return self._check_error(self.bx24.call(
+            'crm.item.productrow.delete',
+            {
+                'ownerType': owner_type,
+                'ownerId': owner_id,
+                'productRows': product_rows,
+            }
+        ))
+
+    def list(self, owner_type, owner_id):
+        """Метод для получения товарных позиций по сущности."""
+        return self._check_error(self.bx24.call(
+            'crm.item.productrow.delete',
+            {
+                'filter': {
+                    '=ownerType': owner_type,
+                    '=ownerId': owner_id
+                }
+            }
+        ))
+
+    def delete(self):
+        """Метод удаления товарной позиции."""
+        return self._check_error(self.bx24.call(
+            'crm.item.productrow.delete',
+            {
+                'id': self.properties.get('id')
             }
         ))
 
