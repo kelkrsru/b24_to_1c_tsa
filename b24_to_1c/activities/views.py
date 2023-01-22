@@ -147,7 +147,7 @@ def copy_deal(request):
         deal.properties['IS_NEW'] = field_is_new_value
         new_deal_id = DealB24(portal, 0).create(deal.properties)
         new_deal = DealB24(portal, new_deal_id)
-        new_deal.update({field_origin_deal_code: new_deal_id})
+        new_deal.update({field_origin_deal_code: initial_data.get('deal_id')})
         deal_products_rows = ProductRowB24(portal, 0).list(
             'D', initial_data.get('deal_id'))
         for deal_product_row in deal_products_rows.get('productRows'):
