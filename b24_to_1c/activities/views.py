@@ -115,7 +115,9 @@ def copy_deal(request):
     """Method from copy deal with expenses and clear 1c fields."""
     fields_for_del = ['ID', 'UF_CRM_1665054060', 'UF_CRM_1665054102',
                       'UF_CRM_1665054289', 'UF_CRM_1667785528',
-                      'UF_CRM_1667785549', 'UF_CRM_1667785572']
+                      'UF_CRM_1667785549', 'UF_CRM_1667785572',
+                      'UF_CRM_1665034515']
+    field_origin_deal_code = 'UF_CRM_1674380869'
     field_type_id_value = 'SALE'
     field_stage_id_value = 'NEW'
     field_opened_value = 'Y'
@@ -143,17 +145,16 @@ def copy_deal(request):
         deal.properties['OPENED'] = field_opened_value
         deal.properties['CLOSED'] = field_closed_value
         deal.properties['IS_NEW'] = field_is_new_value
-        new_deal = DealB24(portal, 0)
-        new_deal_id = new_deal.create(deal.properties)
+        new_deal_id = DealB24(portal, 0).create(deal.properties)
+        new_deal = DealB24(portal, new_deal_id)
+        new_deal.update({field_origin_deal_code: new_deal_id})
         deal_products_rows = ProductRowB24(portal, 0).list(
             'D', initial_data.get('deal_id'))
         for deal_product_row in deal_products_rows.get('productRows'):
             del deal_product_row['id']
-        res = ProductRowB24(portal, 0).set('D', new_deal_id,
-                                           deal_products_rows.get(
-                                               'productRows'))
+        ProductRowB24(portal, 0).set('D', new_deal_id,
+                                     deal_products_rows.get('productRows'))
         return_values['result'] = f'ID созданной сделки = {new_deal_id}'
-        return_values['result'] = res
         _response_for_bp(
             portal,
             initial_data['event_token'],
