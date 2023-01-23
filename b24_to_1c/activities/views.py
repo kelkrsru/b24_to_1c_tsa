@@ -116,7 +116,7 @@ def copy_deal(request):
     fields_for_del = ['ID', 'UF_CRM_1665054060', 'UF_CRM_1665054102',
                       'UF_CRM_1665054289', 'UF_CRM_1667785528',
                       'UF_CRM_1667785549', 'UF_CRM_1667785572',
-                      'UF_CRM_1665034515']
+                      'UF_CRM_1665034515', 'UF_CRM_1665054125']
     field_origin_deal_code = 'UF_CRM_1674380869'
     field_type_id_value = 'SALE'
     field_stage_id_value = 'NEW'
