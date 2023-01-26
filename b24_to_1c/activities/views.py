@@ -111,6 +111,86 @@ def add_productrow(request):
 
 
 @csrf_exempt
+def copy_deal(request):
+    """Method from copy deal with expenses and clear 1c fields."""
+    fields_for_del = ['ID', 'UF_CRM_1665054060', 'UF_CRM_1665054102',
+                      'UF_CRM_1665054289', 'UF_CRM_1667785528',
+                      'UF_CRM_1667785549', 'UF_CRM_1667785572',
+                      'UF_CRM_1665034515', 'UF_CRM_1665054125']
+    field_origin_deal_code = 'UF_CRM_1674380869'
+    field_type_id_value = 'SALE'
+    field_stage_id_value = 'NEW'
+    field_opened_value = 'Y'
+    field_closed_value = 'N'
+    field_is_new_value = 'Y'
+
+    initial_data = _get_initial_data_copy_deal(request)
+    portal, settings_portal = _create_portal(initial_data)
+    _check_initial_data(portal, initial_data)
+    return_values = {
+        'result': '',
+        'has_error': 'N',
+        'error_desc': '',
+    }
+
+    try:
+        deal = DealB24(portal, initial_data.get('deal_id'))
+        for field in fields_for_del:
+            if field not in deal.properties:
+                continue
+            del deal.properties[field]
+        deal.properties['TITLE'] = f'( КОПИЯ ) {deal.properties["TITLE"]}'
+        deal.properties['TYPE_ID'] = field_type_id_value
+        deal.properties['STAGE_ID'] = field_stage_id_value
+        deal.properties['OPENED'] = field_opened_value
+        deal.properties['CLOSED'] = field_closed_value
+        deal.properties['IS_NEW'] = field_is_new_value
+        new_deal_id = DealB24(portal, 0).create(deal.properties)
+        if initial_data['is_copy_expenses'] == 'Y':
+            new_deal = DealB24(portal, new_deal_id)
+            new_deal.update({
+                field_origin_deal_code: initial_data.get('deal_id')
+            })
+        deal_products_rows = ProductRowB24(portal, 0).list(
+            'D', initial_data.get('deal_id'))
+        for deal_product_row in deal_products_rows.get('productRows'):
+            del deal_product_row['id']
+        ProductRowB24(portal, 0).set('D', new_deal_id,
+                                     deal_products_rows.get('productRows'))
+        return_values['result'] = f'ID созданной сделки = {new_deal_id}'
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Активити успешно завершило свои действия',
+            return_values=return_values,
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+    except RuntimeError as ex:
+        return_values['result'] = 'Ошибка. Просмотр в поле error_desc.'
+        return_values['has_error'] = 'Y'
+        return_values['error_desc'] = (f'Ошибка: {ex.args[0]}. Описание ошибки'
+                                       f': {ex.args[1]}')
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Ошибка в работе активити',
+            return_values=return_values,
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+    except Exception as ex:
+        return_values['result'] = 'Ошибка. Просмотр в поле error_desc.'
+        return_values['has_error'] = 'Y'
+        return_values['error_desc'] = f'Ошибка. Описание ошибки: {ex.args[0]}'
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Ошибка в работе активити',
+            return_values=return_values,
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+
+
+@csrf_exempt
 def b24_to_1c(request):
     """Method send request from b24 to 1C."""
     # logging.config.dictConfig({
@@ -188,7 +268,7 @@ def b24_to_1c(request):
         document['TransportationDate'] = transfer_date
         document['Tax'] = '1' if initial_data.get('tax') == 'Y' else '0'
         document['IsTaxIncluded'] = ('1' if initial_data.get('tax_include') ==
-                                     'Y' else '0')
+                                            'Y' else '0')
         document['CompanyINN'] = initial_data.get('my_company_inn')
         # Airline
         if airline_id and airline_id > 0:
@@ -334,6 +414,18 @@ def _get_initial_data_add_productrow(request):
         'name': request.POST.get('properties[productrow_name]'),
         'price': request.POST.get('properties[productrow_price]'),
         'quantity': request.POST.get('properties[productrow_quantity]'),
+    }
+
+
+def _get_initial_data_copy_deal(request):
+    """Method for get initial data from Post request for copy_deal."""
+    if request.method != 'POST':
+        return HttpResponse(status=HTTPStatus.BAD_REQUEST)
+    return {
+        'member_id': request.POST.get('auth[member_id]'),
+        'event_token': request.POST.get('event_token'),
+        'deal_id': request.POST.get('properties[deal_id]') or 0,
+        'is_copy_expenses': request.POST.get('properties[is_copy_expenses]'),
     }
 
 
