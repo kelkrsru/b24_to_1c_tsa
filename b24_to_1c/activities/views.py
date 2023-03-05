@@ -247,6 +247,7 @@ def b24_to_1c(request):
         company_inn = initial_data.get('client_inn')
         company_kpp = initial_data.get('client_kpp')
         company_name = initial_data.get('client_name')
+        company_address = initial_data.get('client_address')
         if not company_inn:
             _response_for_bp(
                 portal,
@@ -256,7 +257,7 @@ def b24_to_1c(request):
             )
             return HttpResponse(status=HTTPStatus.OK)
         logger.info(f'Company: {company_name = }, {company_inn = }, '
-                    f'{company_kpp = }')
+                    f'{company_kpp = }, {company_address = }')
         # Document
         document_date = datetime.datetime.strptime(
             initial_data.get('document_date'), '%d.%m.%Y').strftime('%Y-%m-%d')
@@ -294,6 +295,8 @@ def b24_to_1c(request):
         }
         if company_kpp:
             document['Client']['KPP'] = company_kpp
+        if company_address:
+            document['Client']['Address'] = company_address
         logger.info('Document: \n{}'.format(json.dumps(document, indent=2,
                                                        ensure_ascii=False)))
 
@@ -397,6 +400,7 @@ def _get_initial_data(request):
         'client_inn': request.POST.get('properties[client_inn]'),
         'client_kpp': request.POST.get('properties[client_kpp]'),
         'client_name': request.POST.get('properties[client_name]'),
+        'client_address': request.POST.get('properties[client_address]'),
         'tax': request.POST.get('properties[tax]'),
         'tax_include': request.POST.get('properties[tax_include]'),
         'my_company_inn': request.POST.get('properties[my_company_inn]'),
