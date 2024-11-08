@@ -14,6 +14,8 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', default='').split(' ')
 
 APP_NAME = os.getenv('APP_NAME', default='Приложение')
 
+PRODUCTION = False if os.getenv('PRODUCTION') == 'False' else True
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -101,9 +103,12 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 MEDIA_URL = 'media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+if PRODUCTION:
+    STATIC_ROOT = os.getenv('PATH_STATIC_ROOT')
+    MEDIA_ROOT = os.getenv('PATH_MEDIA_ROOT')
+else:
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
