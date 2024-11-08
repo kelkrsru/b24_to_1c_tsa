@@ -60,7 +60,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'b24_to_1c.wsgi.application'
 
-if DEBUG:
+if not PRODUCTION:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
